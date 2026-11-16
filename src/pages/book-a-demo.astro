@@ -1,0 +1,223 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import PhotoComparison from '../components/PhotoComparison.astro';
+import { companyTypes } from '../lead-options.mjs';
+import { bookingUrl } from '../site';
+import '../styles/product.css';
+
+const topics = [
+  { id: 'general', label: 'General demo', detail: 'Walk through a vehicle photo, compare showroom styles, and discuss what fits your store.' },
+  { id: 'photo-app', label: 'Guided Photo App', detail: 'Bring your current shot list and see how to get a consistent set of images from the lot.' },
+  { id: 'custom-background', label: 'Custom showroom', detail: 'Bring a vehicle photo and a reference for the showroom or dealership look you want.' },
+  { id: 'integration', label: 'Publishing and integration', detail: 'Bring an example listing and the names of your website provider and inventory system.' },
+  { id: 'partnership', label: 'Partnerships', detail: 'Tell us who you serve and how vehicle photography fits the service you provide.' },
+];
+---
+<SiteLayout
+  title="Book a Vehicle Photography Demo"
+  description="Request a tailored AutoPixelAI demo to discuss guided capture, showroom styles, and publishing."
+  path={bookingUrl}
+>
+  <section class="product-hero">
+    <div class="wrap demo-layout">
+      <div>
+        <h1>See it on your inventory.</h1>
+        <p class="product-lead">Bring a vehicle photo and show us how you publish today. We’ll walk through the photo, a showroom style, and the steps to deliver the finished images.</p>
+      </div>
+      <form class="demo-request" id="demo-form" method="post" action="/api/leads" aria-labelledby="demo-form-title">
+        <h2 id="demo-form-title">Request a demo.</h2>
+        <p class="form-note" data-lead-note hidden>Preview mode · Your details stay on this page.</p>
+        <div class="demo-fields">
+          <div>
+            <label for="demo-name">Full name <span>(required)</span></label>
+            <input id="demo-name" name="name" type="text" autocomplete="name" maxlength="80" required />
+          </div>
+          <div>
+            <label for="demo-email">Work email <span>(required)</span></label>
+            <input id="demo-email" name="email" type="email" autocomplete="email" maxlength="160" required />
+          </div>
+          <div>
+            <label for="demo-company">Dealership or company <span>(required)</span></label>
+            <input id="demo-company" name="company" type="text" autocomplete="organization" maxlength="150" required />
+          </div>
+          <div>
+            <label for="demo-phone">Phone <span>(optional)</span></label>
+            <input id="demo-phone" name="phone" type="tel" autocomplete="tel" maxlength="40" />
+          </div>
+          <div class="wide-field">
+            <label for="demo-company-type">Company type</label>
+            <select id="demo-company-type" name="companyType">
+              <option value="">Select a company type</option>
+              {companyTypes.map((type) => <option>{type}</option>)}
+            </select>
+          </div>
+          <div class="wide-field">
+            <label for="demo-topic">Demo topic</label>
+            <select id="demo-topic" name="topic" aria-describedby="topic-detail">
+              {topics.map((topic) => <option value={topic.id} data-detail={topic.detail}>{topic.label}</option>)}
+            </select>
+            <p id="topic-detail">{topics[0].detail}</p>
+          </div>
+          <div class="wide-field">
+            <label for="demo-notes">Anything else we should know? <span>(optional)</span></label>
+            <textarea id="demo-notes" name="message" rows="3" maxlength="1000"></textarea>
+          </div>
+        </div>
+        <label class="demo-consent"><input type="checkbox" name="consent" required /> I agree to be contacted about this enquiry.</label>
+        <div hidden><label>Leave this field empty <input name="contactWebsite" tabindex="-1" autocomplete="off" /></label></div>
+        <div data-lead-security></div>
+        <button class="button" type="submit" disabled>Request My Inventory Demo <span class="arrow" aria-hidden="true"></span></button>
+        <p class="form-note" role="status" data-lead-status></p>
+        <noscript><p>Enable JavaScript to submit or preview this enquiry.</p></noscript>
+        <div id="enquiry-preview" class="enquiry-preview" hidden>
+          <h3 tabindex="-1">Enquiry preview</h3>
+          <dl></dl>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="product-section">
+    <div class="wrap product-split prep">
+      <PhotoComparison />
+      <div>
+        <h2>What we’ll cover.</h2>
+        <ol class="agenda">
+          <li><strong>Capture</strong><span>Review how your team photographs inventory.</span></li>
+          <li><strong>Enhance</strong><span>Explore showroom styles for your inventory.</span></li>
+          <li><strong>Publish</strong><span>Discuss fit with your existing website or listing provider.</span></li>
+        </ol>
+        <a class="text-link" href="/try-it/">Try an example <span class="arrow" aria-hidden="true"></span></a>
+      </div>
+    </div>
+  </section>
+</SiteLayout>
+
+<script>
+  import { bindLeadForm } from '../lead-form';
+
+  const form = document.querySelector<HTMLFormElement>('#demo-form')!;
+  const select = document.querySelector<HTMLSelectElement>('#demo-topic')!;
+  const description = document.querySelector('#topic-detail')!;
+  const preview = document.querySelector<HTMLElement>('#enquiry-preview')!;
+  const url = new URL(window.location.href);
+  const requested = url.searchParams.get('request');
+  if (requested && [...select.options].some((option) => option.value === requested)) select.value = requested;
+
+  function updateTopic() {
+    description.textContent = select.selectedOptions[0].dataset.detail ?? '';
+  }
+  updateTopic();
+
+  select.addEventListener('change', () => {
+    if (select.value === 'general') url.searchParams.delete('request');
+    else url.searchParams.set('request', select.value);
+    history.replaceState(null, '', url);
+    updateTopic();
+  });
+
+  form.addEventListener('input', () => { preview.hidden = true; });
+  form.addEventListener('reset', () => queueMicrotask(updateTopic));
+  bindLeadForm(form, { requestType: () => select.value, preview: (data) => {
+    const rows = [
+      ['Name', data.get('name')],
+      ['Work email', data.get('email')],
+      ['Company', data.get('company')],
+      ['Phone', data.get('phone')],
+      ['Topic', select.selectedOptions[0].textContent],
+      ['Notes', data.get('message')],
+    ];
+    const list = preview.querySelector('dl')!;
+    list.replaceChildren();
+    for (const [label, rawValue] of rows) {
+      const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+      if (!value) continue;
+      const term = document.createElement('dt');
+      const detail = document.createElement('dd');
+      term.textContent = label;
+      detail.textContent = value;
+      list.append(term, detail);
+    }
+    preview.hidden = false;
+    preview.querySelector('h3')?.focus();
+  } });
+</script>
+
+<style>
+  .demo-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 2rem clamp(2rem, 5vw, 5rem);
+    align-items: start;
+  }
+
+  .agenda {
+    margin: 1.5rem 0 0.65rem;
+    padding: 0;
+    list-style: none;
+    max-inline-size: 34rem;
+  }
+
+  .agenda li {
+    padding-block: 0.9rem;
+    border-block-start: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: minmax(5.75rem, 0.28fr) 1fr;
+    gap: 0.4rem;
+  }
+
+  .agenda li span, .demo-request p { color: var(--muted); }
+
+  .demo-request {
+    margin-block-start: 0.4rem;
+    padding: clamp(1.3rem, 4vw, 3.2rem);
+    border: 1px solid var(--rule);
+    background: var(--panel);
+  }
+
+  .demo-request h2 { font: 700 clamp(2.5rem, 1.4rem + 2.5vw, 4.2rem)/1 var(--display); }
+  .demo-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0.85rem;
+    margin-block: 1.3rem;
+  }
+  .wide-field { grid-column: 1 / -1; }
+  label { display: block; font-weight: 650; font-size: 0.88rem; margin-block-end: 0.4rem; }
+  label span { color: var(--muted); font-weight: 400; }
+  input:not([type="checkbox"]), select, textarea {
+    font: inherit;
+    color: var(--text);
+    border: 1px solid #857365;
+    background: var(--background);
+    padding: 0.65rem 0.75rem;
+    min-block-size: 3rem;
+    inline-size: 100%;
+  }
+  textarea { resize: vertical; }
+  input:user-invalid { border-color: #fa9a88; }
+  #topic-detail { margin-block-start: 0.45rem; font-size: 0.84rem; }
+  .form-note { margin-block-start: 0.75rem; font-size: 0.85rem; }
+  .form-note:empty { display: none; }
+  .demo-consent { display: flex; align-items: start; gap: 0.55rem; margin-block: 1rem; }
+  .demo-consent input { margin-block-start: 0.25rem; accent-color: var(--accent); }
+  [data-lead-security]:not(:empty) { margin-block-end: 0.7rem; }
+  button { min-block-size: 3rem; }
+  button:disabled { opacity: 0.55; cursor: default; }
+  .enquiry-preview { margin-block-start: 1.25rem; padding-block-start: 1rem; border-block-start: 1px solid var(--rule); }
+  .enquiry-preview h3 { font-size: 1.15rem; }
+  .enquiry-preview dl { margin: 0.7rem 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.4rem 1rem; }
+  .enquiry-preview dt { font-weight: 650; }
+  .enquiry-preview dd { margin: 0; overflow-wrap: anywhere; color: var(--muted); white-space: pre-wrap; }
+
+  .prep { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); }
+
+  @media (max-width: 51rem) {
+    .demo-layout, .prep { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (max-width: 31rem) {
+    .agenda li { grid-template-columns: minmax(0, 1fr); }
+    .demo-fields { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

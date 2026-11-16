@@ -1,0 +1,21 @@
+{
+  "name": "autopixelai-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "node server/index.mjs",
+    "test": "npm run build && node --test"
+  },
+  "dependencies": {
+    "@fontsource-variable/instrument-sans": "^5.2.0",
+    "@fontsource/barlow-condensed": "^5.2.0",
+    "astro": "^6.3.1",
+    "express": "5.3.0",
+    "nodemailer": "10.1.0"
+  }
+}

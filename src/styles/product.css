@@ -1,0 +1,63 @@
+.product-hero {
+  padding-block: clamp(3rem, 7vw, 7.5rem);
+}
+
+.product-split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+}
+
+.product-hero h1, .product-section h2, .product-callout h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 0.97;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.product-hero h1 { font-size: clamp(3.6rem, 1.75rem + 5.4vw, 6.65rem); }
+.product-section h2, .product-callout h2 { font-size: clamp(2.7rem, 1.6rem + 3.4vw, 4.9rem); }
+
+.product-lead {
+  margin-block: 1.25rem;
+  max-inline-size: 41ch;
+  color: var(--muted);
+  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+}
+
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1.2rem;
+}
+
+.product-section {
+  padding-block: clamp(3.5rem, 6vw, 6.5rem);
+}
+
+.product-callout {
+  padding-block: clamp(3rem, 5vw, 5rem);
+  background: linear-gradient(var(--background), var(--panel) 40% 60%, var(--background));
+}
+
+.product-callout .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+}
+
+.product-callout p {
+  color: var(--muted);
+  margin-block-start: 0.75rem;
+  max-inline-size: 51ch;
+}
+
+@media (max-width: 51rem) {
+  .product-split { grid-template-columns: minmax(0, 1fr); }
+  .product-hero h1 { max-inline-size: 15ch; }
+}

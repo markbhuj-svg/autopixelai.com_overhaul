@@ -1,0 +1,60 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import PhotoComparison from '../components/PhotoComparison.astro';
+import VehiclePhotoUpload from '../components/VehiclePhotoUpload.astro';
+import { bookingUrl, tryPhotoUrl } from '../site';
+import '../styles/product.css';
+---
+<SiteLayout
+  title="Try AI Car Photo Background Replacement"
+  description="Preview your vehicle photo and explore a real AutoPixelAI showroom transformation."
+  path={tryPhotoUrl}
+>
+  <section class="product-hero test-bay">
+    <div class="wrap">
+      <div class="upload-layout">
+        <div>
+          <h1>Try your own vehicle photo.</h1>
+          <p class="product-lead">Choose a clear image with the whole car in the frame. You can preview it right here.</p>
+          <a class="text-link" href="#sample-result">See a finished example</a>
+        </div>
+        <VehiclePhotoUpload />
+      </div>
+    </div>
+  </section>
+
+  <section id="sample-result" class="product-section">
+    <div class="wrap product-split">
+      <div>
+        <h2>See the showroom difference.</h2>
+        <p class="product-lead">Watch lot photos of the BMW 5 Series, Chevrolet Tahoe, and Ford F-150 change across three showroom settings.</p>
+      </div>
+      <PhotoComparison />
+    </div>
+  </section>
+
+  <section class="product-callout">
+    <div class="wrap">
+      <div>
+        <h2>Find a look for the rest of your inventory.</h2>
+        <p>Explore settings, then bring a sample to a demo to discuss your brand and publishing workflow.</p>
+      </div>
+      <div class="product-actions">
+        <a class="button" href="/virtual-showrooms/">Explore showrooms</a>
+        <a class="text-link" href={bookingUrl}>Book a demo</a>
+      </div>
+    </div>
+  </section>
+</SiteLayout>
+
+<style>
+  .test-bay .wrap { max-inline-size: 82rem; }
+  .upload-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: clamp(1.75rem, 5vw, 5rem);
+    align-items: center;
+  }
+
+  @media (max-width: 51rem) { .upload-layout { grid-template-columns: minmax(0, 1fr); } }
+</style>

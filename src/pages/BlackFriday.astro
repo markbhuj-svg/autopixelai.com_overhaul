@@ -1,0 +1,135 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import PhotoComparison from '../components/PhotoComparison.astro';
+import { companyTypes } from '../lead-options.mjs';
+import { campaignUrl } from '../site';
+import '../styles/product.css';
+
+const meetingUrl = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ3slqCFKwEyJolW8dq6lsPh2uymHWEZwACtTdVOamZtjklwiFjAIrt2_tGn1qOpmYpa53IU1CTD';
+---
+<SiteLayout
+  title="Black Friday Vehicle Photography Offer"
+  description="Register for two free months on an AutoPixelAI monthly package with free website and listing integration."
+  path={campaignUrl}
+>
+  <section class="product-hero campaign">
+    <div class="wrap product-split">
+      <div>
+        <h1>Black Friday.<br /><strong>2 months free.</strong></h1>
+        <p class="product-lead">Give every vehicle listing a showroom-ready look. Bring your dealership’s photos into AutoPixelAI and get two months free when you sign up for a monthly package.</p>
+        <div class="product-actions">
+          <a class="button" href="#offer-form">Get 2 months free <span class="arrow" aria-hidden="true"></span></a>
+        </div>
+      </div>
+      <PhotoComparison />
+    </div>
+  </section>
+
+  <section class="product-callout">
+    <div class="wrap">
+      <div>
+        <h2>Free integration.</h2>
+        <p>Connect your dealership website and listing platforms at no integration cost.</p>
+      </div>
+      <a class="text-link" href="#offer-form">Let’s get you connected <span class="arrow" aria-hidden="true"></span></a>
+    </div>
+  </section>
+
+  <section id="offer-form" class="product-section offer-section" aria-labelledby="offer-heading">
+    <div class="wrap product-split">
+      <div>
+        <h2 id="offer-heading">Register for the Black Friday offer.</h2>
+        <p class="product-lead">Send your details to record the date of your offer request. We’ll email you a link to book a meeting.</p>
+        <div class="offer-contact">
+          <h3>Ready to book?</h3>
+          <p>Book directly to discuss and claim the offer.</p>
+          <a class="text-link" href={meetingUrl}>Book a meeting <span class="arrow" aria-hidden="true"></span></a>
+          <address>
+            <a href="tel:+14372373275">+1 (437) 237-3275</a>
+            <a href="mailto:team@autopixelai.com">team@autopixelai.com</a>
+          </address>
+        </div>
+      </div>
+      <form id="black-friday-form" class="offer-form" method="post" action="/api/leads" aria-labelledby="offer-form-title">
+        <h3 id="offer-form-title">Tell us about your team.</h3>
+        <p data-lead-note hidden>This is a local preview. Your details stay in this browser.</p>
+        <div class="offer-fields">
+          <label>First name * <input name="firstName" autocomplete="given-name" maxlength="80" required /></label>
+          <label>Last name <input name="lastName" autocomplete="family-name" maxlength="80" /></label>
+          <label>Work email * <input name="email" type="email" autocomplete="email" maxlength="160" required /></label>
+          <label>Dealership or company * <input name="company" autocomplete="organization" maxlength="160" required /></label>
+          <label>Phone <input name="phone" type="tel" autocomplete="tel" maxlength="40" /></label>
+          <label>Company type
+            <select name="companyType">
+              <option value="">Select a company type</option>
+              {companyTypes.map((type) => <option>{type}</option>)}
+            </select>
+          </label>
+          <label class="offer-wide">Anything we should know?
+            <textarea name="message" maxlength="2000" rows="3"></textarea>
+          </label>
+        </div>
+        <label class="offer-consent"><input type="checkbox" name="consent" required /> I agree to be contacted about this enquiry. *</label>
+        <div hidden><label>Leave this field empty <input name="contactWebsite" tabindex="-1" autocomplete="off" /></label></div>
+        <div data-lead-security></div>
+        <button class="button" type="submit" disabled>Get the Black Friday Deal</button>
+        <p class="offer-form-status" role="status" data-lead-status></p>
+        <noscript><p>Enable JavaScript to submit this enquiry, or email team@autopixelai.com.</p></noscript>
+      </form>
+    </div>
+  </section>
+</SiteLayout>
+
+<script>
+  import { bindLeadForm } from '../lead-form';
+
+  const form = document.querySelector<HTMLFormElement>('#black-friday-form')!;
+  bindLeadForm(form, {
+    requestType: 'black-friday',
+    preview: () => {
+      form.querySelector('[data-lead-status]')!.textContent = 'Your enquiry is ready to submit on the live site.';
+    },
+  });
+</script>
+
+<style>
+  .campaign { background: linear-gradient(var(--background), #17100d 40% 60%, var(--background)); }
+  .campaign h1 strong { font-weight: inherit; color: var(--accent); }
+  .offer-section .product-split { align-items: start; }
+  .offer-contact h3 { font-size: 1.2rem; }
+  .offer-contact p, .offer-contact address { color: var(--muted); }
+  .offer-contact address { display: grid; justify-items: start; font-style: normal; }
+  .offer-contact a:hover { color: var(--accent); }
+
+  .offer-form {
+    padding: clamp(1.1rem, 4vw, 3rem);
+    border: 1px solid var(--rule);
+    background: var(--panel);
+  }
+  .offer-form h3 { font: 700 clamp(2.3rem, 1.75rem + 1.8vw, 3.5rem)/1 var(--display); }
+  .offer-form p { color: var(--muted); }
+  .offer-form p:not(:empty) { margin-block-start: 0.65rem; }
+  .offer-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-block: 1.35rem;
+  }
+  .offer-wide { grid-column: 1 / -1; }
+  .offer-fields label { display: grid; gap: 0.35rem; font-size: 0.9rem; }
+  .offer-fields :is(input, select, textarea) {
+    inline-size: 100%;
+    min-block-size: 2.85rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #857365;
+    font: inherit;
+    color: var(--text);
+    background: var(--background);
+  }
+  .offer-fields textarea { resize: vertical; }
+  .offer-consent { display: flex; align-items: start; gap: 0.55rem; margin-block: 1rem; }
+  .offer-consent input { margin-block-start: 0.3rem; accent-color: var(--accent); }
+  [data-lead-security]:not(:empty) { margin-block-end: 0.7rem; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  @media (max-width: 40rem) { .offer-fields { grid-template-columns: minmax(0, 1fr); } }
+</style>

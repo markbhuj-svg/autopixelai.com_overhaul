@@ -1,0 +1,136 @@
+---
+import type { ImageMetadata } from 'astro';
+
+const vehicles = [
+  { id: 'bmw-5', name: 'BMW 5 Series' },
+  { id: 'chevrolet-tahoe', name: 'Chevrolet Tahoe' },
+  { id: 'ford-f-150', name: 'Ford F-150' },
+];
+const settings = ['warm studio', 'turntable studio', 'dealership exterior'];
+const finishedPhotos = import.meta.glob<ImageMetadata>('../assets/visualizer/*/*/8.jpg', { eager: true, import: 'default' });
+const pairs = settings.flatMap((setting, index) => vehicles.map(({ id, name }) => ({
+  name,
+  setting,
+  before: `/media/try-it/${id}-before.webp`,
+  after: finishedPhotos[`../assets/visualizer/${id}/${index + 1}/8.jpg`].src,
+})));
+const first = pairs[0];
+---
+
+<figure class="photo-comparison" data-comparison-pairs={JSON.stringify(pairs)}>
+  <div class="comparison-frame" id="comparison-frame">
+    <img src={first.before} alt={`${first.name} on the lot`} width="1448" height="1086" loading="lazy" decoding="async" draggable="false" />
+    <img class="comparison-finish" src={first.after} alt={`${first.name} in the ${first.setting}`} width="1600" height="1200" loading="lazy" decoding="async" draggable="false" />
+  </div>
+</figure>
+
+<script>
+  type Pair = { name: string; setting: string; before: string; after: string };
+
+  const comparison = document.querySelector<HTMLElement>('[data-comparison-pairs]')!;
+  const frame = comparison.querySelector<HTMLElement>('.comparison-frame')!;
+  const [before, after] = frame.querySelectorAll('img');
+  const pairs: Pair[] = JSON.parse(comparison.dataset.comparisonPairs!);
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+  let visible = false;
+  let nextIndex = 1;
+  let sweep: Animation | undefined;
+  let queued: Pair | null | undefined;
+
+  function startSweep() {
+    const next = pairs[nextIndex];
+    nextIndex = (nextIndex + 1) % pairs.length;
+    const imagesReady = Promise.all([next.before, next.after].map((src) => {
+      const image = new Image();
+      image.src = src;
+      return image.decode();
+    })).then(() => next, () => null);
+
+    sweep = frame.animate([
+      { '--comparison-divider': '100%', offset: 0 },
+      { '--comparison-divider': '100%', offset: 0.21, easing: 'ease-in-out' },
+      { '--comparison-divider': '0%', offset: 0.73 },
+      { '--comparison-divider': '0%', offset: 1 },
+    ], { duration: 4600, fill: 'forwards' });
+
+    sweep.onfinish = async () => {
+      queued = await imagesReady;
+      syncPlayback();
+    };
+  }
+
+  function syncPlayback() {
+    if (!visible || document.hidden || reducedMotion.matches) {
+      if (sweep?.playState === 'running') sweep.pause();
+      return;
+    }
+
+    if (queued !== undefined) {
+      if (queued) {
+        before.src = queued.before;
+        before.alt = `${queued.name} on the lot`;
+        after.src = queued.after;
+        after.alt = `${queued.name} in the ${queued.setting}`;
+      }
+      queued = undefined;
+      sweep?.cancel();
+      sweep = undefined;
+    }
+
+    if (!sweep) startSweep();
+    else if (sweep.playState === 'paused') sweep.play();
+  }
+
+  if ('registerProperty' in CSS && 'animate' in frame && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      syncPlayback();
+    }).observe(comparison);
+
+    document.addEventListener('visibilitychange', syncPlayback);
+    reducedMotion.addEventListener('change', syncPlayback);
+  }
+</script>
+
+<style>
+  @property --comparison-divider {
+    syntax: '<percentage>';
+    inherits: true;
+    initial-value: 50%;
+  }
+
+  .photo-comparison { margin: 0; min-inline-size: 0; }
+
+  .comparison-frame {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: var(--background);
+  }
+
+  .comparison-frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .comparison-finish { clip-path: inset(0 0 0 var(--comparison-divider, 50%)); }
+
+  .comparison-frame::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--comparison-divider, 50%);
+    inline-size: 1px;
+    background: var(--text);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .comparison-frame { --comparison-divider: 50% !important; }
+  }
+</style>

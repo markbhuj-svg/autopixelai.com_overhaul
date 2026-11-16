@@ -1,0 +1,239 @@
+---
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+
+const vehicles = [
+  { id: 'bmw-5', name: 'BMW 5 Series' },
+  { id: 'chevrolet-tahoe', name: 'Chevrolet Tahoe' },
+  { id: 'ford-f-150', name: 'Ford F-150' },
+];
+const backgrounds = ['Warm studio', 'Turntable studio', 'Dealership exterior'];
+const angles = [
+  { file: 8, name: 'Front three-quarter', short: 'Front ¾' },
+  { file: 7, name: 'Side profile', short: 'Side' },
+  { file: 6, name: 'Rear three-quarter', short: 'Rear ¾' },
+  { file: 5, name: 'Straight rear', short: 'Rear' },
+  { file: 4, name: 'Opposite rear three-quarter', short: 'Rear ¾ · 2' },
+  { file: 3, name: 'Opposite side profile', short: 'Side · 2' },
+  { file: 2, name: 'Straight front', short: 'Front' },
+  { file: 1, name: 'Opposite front three-quarter', short: 'Front ¾ · 2' },
+  { file: 15, name: 'Dashboard', short: 'Dashboard' },
+  { file: 10, name: 'Front seats', short: 'Front seats' },
+];
+
+const originals = import.meta.glob<ImageMetadata>('../assets/visualizer/**/*.jpg', { eager: true, import: 'default' });
+const images = Object.fromEntries(await Promise.all(Object.entries(originals).map(async ([path, image]) => {
+  const thumb = await getImage({ src: image, width: 224, format: 'webp' });
+  return [path.replace('../assets/visualizer/', ''), { src: image.src, thumb: thumb.src }];
+})));
+const rooms = backgrounds.map((name, index) => ({ name, ...images[`bg${index + 1}.jpg`] }));
+const gallery = vehicles.map(({ id, name }) => {
+  const sets = rooms.map((_, index) => angles.map(({ file }) => images[`${id}/${index + 1}/${file}.jpg`] ?? null));
+  return { name, sets, thumbnail: sets.flat().find(Boolean)?.thumb };
+});
+const defaultPhotos = gallery[0].sets[0];
+const firstPhoto = defaultPhotos[0];
+---
+
+<div class="visualizer" data-visualizer={JSON.stringify({ gallery, rooms, angles })}>
+  <div class="visualizer-controls">
+    <fieldset class="choices" disabled>
+      <legend>Vehicle</legend>
+      {gallery.map(({ name, thumbnail }, index) => (
+        <label class="choice">
+          <input class="visually-hidden" type="radio" name="visualizer-vehicle" value={index} checked={index === 0} />
+          <span class="choice-content">
+            {thumbnail ? <img src={thumbnail} width="224" height="168" loading="lazy" decoding="async" alt="" /> : <span class="choice-placeholder" aria-hidden="true"></span>}
+            <span>{name}{!thumbnail && <small>Coming soon</small>}</span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
+    <fieldset class="choices" disabled>
+      <legend>Background</legend>
+      {rooms.map(({ name, thumb }, index) => (
+        <label class="choice">
+          <input class="visually-hidden" type="radio" name="visualizer-room" value={index} checked={index === 0} />
+          <span class="choice-content">
+            <img src={thumb} width="224" height="168" loading="lazy" decoding="async" alt="" />
+            {name}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  </div>
+
+  <div class="visualizer-gallery">
+    <figure class="visualizer-figure">
+      <div class="visualizer-stage">
+        <img data-stage-image src={firstPhoto?.src ?? rooms[0].src} width="1600" height="1200" loading="lazy" decoding="async" alt={firstPhoto ? 'BMW 5 Series, front three-quarter view in the warm studio' : rooms[0].name} />
+        <p class="stage-placeholder" data-placeholder hidden={Boolean(firstPhoto)}>Processed photo coming soon</p>
+      </div>
+      <figcaption class="visually-hidden" aria-live="polite" aria-atomic="true" data-caption>
+        {gallery[0].name} · {rooms[0].name} · {angles[0].name}{firstPhoto ? '' : ' · Processed photo coming soon'}
+      </figcaption>
+    </figure>
+
+    <fieldset class="angle-choices" disabled>
+      <legend class="visually-hidden">View</legend>
+      <div class="angle-grid">
+        {angles.map(({ name, short }, index) => (
+          <label class="choice" title={name}>
+            <input class="visually-hidden" type="radio" name="visualizer-angle" value={index} checked={index === 0} aria-label={name} />
+            <span class="angle-content">
+              <img src={defaultPhotos[index]?.thumb} width="224" height="168" loading="lazy" decoding="async" alt="" hidden={!defaultPhotos[index]} />
+              <span aria-hidden="true" hidden={Boolean(defaultPhotos[index])}>{short}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  </div>
+  <noscript><p class="visualizer-note">Enable JavaScript to change the vehicle, background, or view.</p></noscript>
+</div>
+
+<script>
+  type Photo = { src: string; thumb: string };
+  type VisualizerData = {
+    gallery: { name: string; sets: (Photo | null)[][] }[];
+    rooms: (Photo & { name: string })[];
+    angles: { name: string }[];
+  };
+
+  const root = document.querySelector<HTMLElement>('[data-visualizer]')!;
+  const { gallery, rooms, angles }: VisualizerData = JSON.parse(root.dataset.visualizer!);
+  const stage = root.querySelector<HTMLImageElement>('[data-stage-image]')!;
+  const placeholder = root.querySelector<HTMLElement>('[data-placeholder]')!;
+  const caption = root.querySelector('[data-caption]')!;
+  const thumbnails = root.querySelectorAll<HTMLImageElement>('.angle-content img');
+
+  function selected(group: string) {
+    return Number(root.querySelector<HTMLInputElement>(`input[name="visualizer-${group}"]:checked`)!.value);
+  }
+
+  function render() {
+    const vehicle = gallery[selected('vehicle')];
+    const roomIndex = selected('room');
+    const room = rooms[roomIndex];
+    const angleIndex = selected('angle');
+    const angle = angles[angleIndex];
+    const photos = vehicle.sets[roomIndex];
+    const photo = photos[angleIndex];
+    const description = `${vehicle.name} · ${room.name} · ${angle.name}`;
+
+    stage.src = photo?.src ?? room.src;
+    stage.alt = photo ? description : `${room.name} background`;
+    placeholder.hidden = Boolean(photo);
+    caption.textContent = photo ? description : `${description} · Processed photo coming soon`;
+
+    thumbnails.forEach((thumbnail, index) => {
+      const frame = photos[index];
+      if (frame) thumbnail.src = frame.thumb;
+      else thumbnail.removeAttribute('src');
+      thumbnail.hidden = !frame;
+      (thumbnail.nextElementSibling as HTMLElement).hidden = Boolean(frame);
+    });
+  }
+
+  root.addEventListener('change', render);
+  root.querySelectorAll('fieldset').forEach((fieldset) => { fieldset.disabled = false; });
+</script>
+
+<style>
+  .visualizer {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.28fr) minmax(0, 1fr);
+    gap: 1.25rem clamp(1rem, 2.4vw, 2.5rem);
+    align-items: start;
+    padding: clamp(1rem, 2.4vw, 2rem);
+    border: 1px solid var(--rule);
+    border-radius: 0.85rem;
+    background: var(--panel);
+  }
+
+  .visualizer-controls { display: grid; gap: clamp(1.25rem, 3vw, 2.75rem); }
+  fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+  legend { margin-block-end: 0.65rem; padding: 0; font-size: 0.85rem; font-weight: 700; }
+  .choices { display: grid; gap: 0.45rem; }
+  .choice { display: block; min-inline-size: 0; cursor: pointer; }
+
+  .choice-content, .angle-content {
+    border: 1px solid var(--rule);
+    border-radius: 0.4rem;
+    color: var(--text);
+    background: var(--background);
+  }
+
+  .choice-content {
+    display: grid;
+    grid-template-columns: clamp(2.65rem, 4vw, 4.15rem) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.6rem;
+    min-block-size: 3.2rem;
+    padding: 0.35rem;
+    font-size: 0.8rem;
+    line-height: 1.25;
+  }
+
+  .choice-content small { display: block; margin-block-start: 0.25em; color: var(--muted); }
+  .choice-placeholder { background: var(--panel); border: 1px dashed var(--rule); }
+  .choice-content img, .choice-placeholder {
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    border-radius: 0.2rem;
+  }
+
+  .choice:hover > span { border-color: var(--muted); }
+  .choice input:checked + span { border-color: var(--accent); }
+  .choice input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .visualizer-gallery { min-inline-size: 0; }
+  .visualizer-figure { inline-size: 85%; margin: 0 auto; }
+
+  .visualizer-stage {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--background);
+    border-radius: 0.5rem;
+  }
+
+  .visualizer-stage img { width: 100%; height: 100%; object-fit: contain; }
+  .stage-placeholder {
+    position: absolute;
+    inset: auto auto 0.65rem 0.65rem;
+    max-inline-size: calc(100% - 1.3rem);
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.3rem;
+    background: var(--background);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+
+  .angle-choices { inline-size: 85%; margin: 0.65rem auto 0; }
+  .angle-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0.35rem; }
+  .angle-content {
+    display: grid;
+    place-items: center;
+    min-block-size: 2.75rem;
+    aspect-ratio: 4 / 3;
+    padding: 0.15rem;
+    font-size: 0.69rem;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .angle-content img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.2rem; }
+  .visualizer-note { color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 64rem) { .angle-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+  @media (max-width: 46rem) {
+    .visualizer { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+    .visualizer-controls { gap: 0.85rem; }
+    .choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .choice-content { height: 100%; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 0.3rem; }
+    .angle-choices { inline-size: 100%; }
+  }
+</style>

@@ -1,0 +1,139 @@
+<section id="image-demo" tabindex="-1" class="upload-panel" aria-labelledby="upload-title">
+  <h2 id="upload-title">Vehicle photo</h2>
+  <div class="drop-zone">
+    <input class="visually-hidden" id="vehicle-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-formats upload-status" />
+    <label class="button upload-button" for="vehicle-photo">Choose a photo <span class="arrow" aria-hidden="true"></span></label>
+    <p class="drop-hint">or drag and drop it here</p>
+    <p id="photo-formats">JPG, PNG or WebP · up to 15 MB</p>
+  </div>
+  <div id="photo-preview" hidden>
+    <figure>
+      <div class="photo-image"></div>
+      <figcaption><span id="photo-filename"></span><button class="text-link clear-photo" type="button">Remove photo</button></figcaption>
+    </figure>
+  </div>
+  <p id="upload-status" role="status"></p>
+  <p class="preview-note">Local preview · Your photo stays on this page.</p>
+  <noscript><p>Enable JavaScript to preview your photo.</p></noscript>
+</section>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('#vehicle-photo')!;
+  const dropZone = document.querySelector<HTMLElement>('.drop-zone')!;
+  const preview = document.querySelector<HTMLElement>('#photo-preview')!;
+  const imageSlot = document.querySelector('.photo-image')!;
+  const filename = document.querySelector('#photo-filename')!;
+  const status = document.querySelector('#upload-status')!;
+  const types = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  let currentUrl = '';
+
+  function clearPhoto() {
+    if (currentUrl) URL.revokeObjectURL(currentUrl);
+    currentUrl = '';
+    imageSlot.replaceChildren();
+    preview.hidden = true;
+    input.removeAttribute('aria-invalid');
+    status.textContent = '';
+  }
+
+  function showError(message: string) {
+    input.setAttribute('aria-invalid', 'true');
+    status.textContent = message;
+  }
+
+  async function showPhoto(file: File) {
+    clearPhoto();
+    if (!types.has(file.type)) return showError('Choose a JPG, PNG or WebP image.');
+    if (file.size > 15 * 1024 * 1024) return showError('Choose an image under 15 MB.');
+
+    const url = URL.createObjectURL(file);
+    currentUrl = url;
+    const image = new Image();
+    image.alt = 'Selected vehicle photo';
+    image.src = url;
+    try {
+      await image.decode();
+    } catch {
+      if (currentUrl !== url) return;
+      clearPhoto();
+      showError('This image could not be opened. Try a different photo.');
+      return;
+    }
+    if (currentUrl !== url) return;
+    imageSlot.replaceChildren(image);
+    filename.textContent = file.name;
+    preview.hidden = false;
+    status.textContent = 'Photo preview ready.';
+  }
+
+  input.addEventListener('change', () => {
+    const file = input.files?.[0];
+    if (file) void showPhoto(file);
+    input.value = '';
+  });
+  dropZone.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    dropZone.classList.add('is-dragging');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'));
+  dropZone.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dropZone.classList.remove('is-dragging');
+    const files = event.dataTransfer?.files;
+    if (!files?.length) return;
+    if (files.length === 1) void showPhoto(files[0]);
+    else showError('Choose one vehicle photo at a time.');
+  });
+  document.querySelector('.clear-photo')?.addEventListener('click', () => {
+    clearPhoto();
+    status.textContent = 'Photo removed.';
+    input.focus();
+  });
+  window.addEventListener('pagehide', (event) => {
+    if (!event.persisted && currentUrl) URL.revokeObjectURL(currentUrl);
+  });
+</script>
+
+<style>
+  .upload-panel {
+    scroll-margin-block-start: 1rem;
+    padding: clamp(1rem, 3vw, 2rem);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+  }
+
+  .upload-panel h2 { font: 700 clamp(2rem, 1.3rem + 2vw, 3.2rem)/1 var(--display); }
+  .drop-zone {
+    position: relative;
+    min-block-size: 13rem;
+    margin-block-start: 1.2rem;
+    padding: 1.7rem 0.85rem;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.55rem;
+    background: #0e0e10;
+    border: 1px dashed #857365;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .drop-zone.is-dragging { background: #271d17; border-color: var(--accent); }
+  .upload-button { cursor: pointer; min-block-size: 3rem; }
+  #vehicle-photo:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 4px; }
+  #photo-formats, .preview-note { font-size: 0.84rem; color: var(--muted); }
+  .preview-note, #upload-status:not(:empty) { margin-block-start: 0.85rem; }
+  #upload-status { font-size: 0.86rem; color: var(--accent); }
+  figure { margin: 1rem 0 0; }
+  .photo-image :global(img) {
+    width: 100%;
+    max-block-size: 24rem;
+    object-fit: contain;
+    background: var(--background);
+  }
+  figcaption { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  #photo-filename { overflow-wrap: anywhere; font-size: 0.86rem; }
+  .clear-photo { flex: none; padding: 0; background: none; border: 0; color: var(--muted); }
+
+  @media (pointer: coarse) { .drop-hint { display: none; } }
+</style>

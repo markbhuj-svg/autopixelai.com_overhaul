@@ -1,0 +1,210 @@
+---
+import { existsSync } from 'node:fs';
+import '@fontsource-variable/instrument-sans/wght-italic.css';
+import { bookingUrl } from '../site';
+
+const videoPath = '/media/hero.mp4';
+const hasVideo = existsSync(`public${videoPath}`);
+---
+<section class="hero" aria-labelledby="hero-title">
+  {hasVideo ? (
+    <video class="hero-media" poster="/media/showroom-hero.webp" width="1720" height="860" muted loop playsinline preload="none" aria-hidden="true">
+      <source src={videoPath} type="video/mp4" />
+    </video>
+  ) : (
+    <picture class="hero-media">
+      <source media="(max-width: 45rem)" srcset="/media/showroom-hero-mobile.webp" width="900" height="1000" />
+      <img src="/media/showroom-hero.webp" width="1720" height="860" fetchpriority="high" alt="" />
+    </picture>
+  )}
+
+  <div class="hero-content wrap">
+    <h1 id="hero-title">
+      <span class="visually-hidden">AI car photography for dealerships.</span>
+      <span class="hero-phrase" data-hero-phrase data-active aria-hidden="true">
+        <span><span class="hero-accent">AI car photography</span></span> <span>for dealerships.</span>
+      </span>
+      <span class="hero-phrase" data-hero-phrase aria-hidden="true">
+        <span>Turn <span class="hero-accent">lot</span> photos into</span> <span><span class="hero-accent">Studio-Quality Images</span>.</span>
+      </span>
+      <span class="hero-phrase hero-phrase-long" data-hero-phrase aria-hidden="true">
+        <span>Every Vehicle Deserves a</span> <span><span class="hero-accent">Showroom-Quality</span> Impression.</span>
+      </span>
+      <span class="hero-phrase hero-phrase-long" data-hero-phrase aria-hidden="true">
+        <span>From Camera to Customer-Ready.</span> <span><span class="hero-accent">Faster Than Ever</span>.</span>
+      </span>
+      <span class="hero-phrase" data-hero-phrase aria-hidden="true">
+        <span><span class="hero-accent">Better</span> Vehicle Photos.</span> <span>Straight to <span class="hero-accent">Your Website</span>.</span>
+      </span>
+    </h1>
+    <p>Guided capture and AI showroom backgrounds for your inventory.</p>
+    <a class="button hero-cta" href={bookingUrl}>Book a demo</a>
+  </div>
+</section>
+
+<script>
+  const video = document.querySelector<HTMLVideoElement>('video.hero-media');
+  const heading = document.querySelector<HTMLElement>('#hero-title');
+  const phrases = heading?.querySelectorAll<HTMLElement>('[data-hero-phrase]');
+  if (heading && phrases?.length) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let activeIndex = 0;
+    let rotation: number | undefined;
+    const showHeadline = (nextIndex: number) => {
+      const animate = !reducedMotion.matches;
+      phrases.forEach((phrase, index) => {
+        phrase.toggleAttribute('data-active', index === nextIndex);
+        phrase.toggleAttribute('data-leaving', animate && index === activeIndex && index !== nextIndex);
+      });
+      activeIndex = nextIndex;
+      heading.toggleAttribute('data-rotating', animate);
+    };
+    const applyPreference = () => {
+      window.clearInterval(rotation);
+      if (reducedMotion.matches) {
+        showHeadline(0);
+        video?.pause();
+        delete document.body.dataset.homeMotion;
+        return;
+      }
+      rotation = window.setInterval(() => {
+        showHeadline((activeIndex + 1) % phrases.length);
+      }, 4000);
+      document.body.dataset.homeMotion = 'playing';
+      void video?.play().catch(() => { /* Keep the poster if autoplay is blocked. */ });
+    };
+
+    reducedMotion.addEventListener('change', applyPreference);
+    applyPreference();
+  }
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    overflow: clip;
+    background: var(--background);
+    text-align: center;
+  }
+
+  .hero-media, .hero::after {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+
+  .hero-media, .hero-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero::after {
+    content: "";
+    background:
+      linear-gradient(180deg, var(--background), #09090a3b 14%, #09090a38 54%, var(--background) 96%),
+      radial-gradient(ellipse at 50% 46%, #09090aaa 0%, #09090a33 72%);
+  }
+
+  .hero-content {
+    padding-block: 4rem;
+  }
+
+  h1 {
+    --headline-scale: 0.8;
+    display: grid;
+    font-family: var(--body);
+    font-style: italic;
+    font-weight: 790;
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+    font-size: calc(clamp(3rem, 1rem + 6.4vw, 7.25rem) * var(--headline-scale));
+    text-wrap: balance;
+  }
+
+  .hero-phrase {
+    grid-area: 1 / 1;
+    align-self: center;
+    min-inline-size: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .hero-phrase > span { display: block; }
+  .hero-phrase-long { font-size: min(0.75em, calc(5.45vw * var(--headline-scale))); }
+  .hero-accent { color: var(--accent); }
+
+  .hero-phrase[data-active] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-phrase[data-leaving] {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .hero-phrase[data-leaving] > span {
+      animation: headline-exit 700ms cubic-bezier(0.16, 0.9, 0.25, 1) both;
+    }
+
+    h1[data-rotating] .hero-phrase[data-active] > span {
+      animation: headline-enter 700ms cubic-bezier(0.16, 0.9, 0.25, 1) both;
+    }
+
+    h1[data-rotating] .hero-phrase > span + span {
+      animation-delay: 200ms;
+    }
+
+    @keyframes headline-enter {
+      from { opacity: 0; transform: translateX(80px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes headline-exit {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(-80px); }
+    }
+  }
+
+  p {
+    margin: 1.7rem auto 2.15rem;
+    max-inline-size: 35ch;
+    color: #efe1d2;
+    font-size: clamp(1rem, 0.88rem + 0.45vw, 1.2rem);
+    text-wrap: balance;
+  }
+
+  .hero-cta {
+    min-block-size: 3rem;
+    padding-inline: 1.65rem;
+    border-color: #f2c9adad;
+    border-radius: 999px;
+    color: var(--text);
+    background: #171312bf;
+  }
+
+  .hero-cta:hover { background: var(--accent); color: var(--ink); }
+
+  @media (max-width: 45rem) {
+    h1 { font-size: calc(clamp(1.5rem, 8.4vw, 3.75rem) * var(--headline-scale)); }
+    .hero-phrase-long { font-size: 0.82em; }
+    .hero-content { padding-block: 2.5rem 4rem; }
+    p { margin-block: 1.25rem 1.7rem; }
+    .hero::after { background-color: #09090a23; }
+  }
+
+  @media (max-height: 38rem) {
+    .hero-content { padding-block: 1.25rem; }
+  }
+
+  @media (max-height: 30rem) and (orientation: landscape) {
+    .hero-content { padding-block: 0.65rem; }
+    h1 { font-size: calc(clamp(2rem, 10dvh, 4rem) * var(--headline-scale)); }
+    p { max-inline-size: none; margin-block: 0.6rem 0.8rem; }
+  }
+</style>

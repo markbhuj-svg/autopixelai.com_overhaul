@@ -1,0 +1,119 @@
+---
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteLogo from '../components/SiteLogo.astro';
+import { bookingUrl, campaignUrl, signInUrl, siteLinks } from '../site';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+}
+
+const { title, description, path } = Astro.props;
+const canonical = new URL(path, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    <title>{title} | AutoPixelAI</title>
+  </head>
+  <body>
+    <a class="skip-link button" href="#main">Skip to content</a>
+    <SiteHeader currentPath={path} />
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-inner">
+          <div>
+            <SiteLogo />
+            <address class="footer-contact">
+              <a href="mailto:team@autopixelai.com">team@autopixelai.com</a>
+              <a href="tel:+14372373275">+1 (437) 237-3275</a>
+            </address>
+          </div>
+          <nav class="footer-nav" aria-label="Footer navigation">
+            <div>
+              <h2>Explore</h2>
+              <ul>
+                {siteLinks.map(({ href, label }) => <li><a href={href}>{label}</a></li>)}
+              </ul>
+            </div>
+            <div>
+              <h2>Dealer resources</h2>
+              <ul>
+                <li><a class="footer-demo" href={bookingUrl}>Book a demo</a></li>
+                <li><a href={signInUrl}>Sign in</a></li>
+                <li><a href={campaignUrl}>Black Friday</a></li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <p class="footer-copyright">© {new Date().getUTCFullYear()} AutoPixelAI</p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .site-footer {
+    padding-block: clamp(3rem, 7vw, 6rem) max(1.5rem, env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(var(--background), #171311 65%);
+  }
+
+  .footer-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 2rem clamp(2rem, 6vw, 6rem);
+    padding-block-end: clamp(2.25rem, 5vw, 4rem);
+  }
+
+  .footer-contact {
+    display: grid;
+    justify-items: start;
+    gap: 0.55rem;
+    margin-block-start: 1.2rem;
+    font-style: normal;
+  }
+
+  .footer-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .footer-nav h2 { font-size: 1rem; font-weight: 700; }
+
+  .footer-nav ul {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .footer-contact, .footer-nav ul, .footer-copyright {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .site-footer a:hover { color: var(--text); }
+  .footer-demo { color: var(--accent); }
+
+  .footer-copyright {
+    padding-block-start: 1.2rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  @media (max-width: 41rem) {
+    .footer-inner { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

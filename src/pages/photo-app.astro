@@ -1,0 +1,353 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { guidedSide, photoFramePath as framePath, photoWorkflow as steps } from '../photo-workflow';
+import { bookingUrl } from '../site';
+import '../styles/product.css';
+
+const timelines = steps.flatMap(({ frames }) => frames.map(({ id }) => `--${id}`)).join(', ');
+---
+<SiteLayout
+  title="Guided Car Photography App"
+  description="Scan the VIN, choose a showroom theme, and capture each angle with AutoPixelAI’s guided Photo App. Review the finished photos in one gallery."
+  path="/photo-app/"
+>
+  <section class="product-hero photo-hero">
+    <div class="wrap photo-hero-layout">
+      <div>
+        <h1>From VIN scan<br />to <em>finished photos.</em></h1>
+        <p class="product-lead">A guided photo sequence your team can repeat for every vehicle on the lot.</p>
+        <div class="product-actions">
+          <a class="button" href={bookingUrl}>Book a demo <span class="arrow" aria-hidden="true"></span></a>
+          <a class="text-link" href="#capture-workflow">Explore the workflow ↓</a>
+        </div>
+      </div>
+      <img class="photo-hero-image" src={framePath(guidedSide.id)} width={guidedSide.width} height={guidedSide.height} alt={guidedSide.alt} fetchpriority="high" />
+    </div>
+  </section>
+
+  <section id="capture-workflow" class="product-section workflow" aria-labelledby="capture-title">
+    <div class="wrap">
+      <header class="workflow-heading">
+        <h2 id="capture-title">The Photo App workflow.</h2>
+        <nav class="workflow-nav" aria-label="Workflow steps">
+          {steps.map(({ id, label }, index) => (
+            <a href={`#${id}`}><span aria-hidden="true">0{index + 1}</span>{label}</a>
+          ))}
+        </nav>
+      </header>
+      <div class="workflow-layout" style={{ '--workflow-timelines': timelines }}>
+        <ol class="workflow-steps" role="list">
+          {steps.map((step, index) => (
+            <li id={step.id} tabindex="-1">
+              {step.frames.map((frame, frameIndex) => (
+                <div class="workflow-beat" style={{ '--frame-timeline': `--${frame.id}` }}>
+                  {frameIndex === 0 ? (
+                    <div class="step-copy">
+                      <p class="step-number" aria-hidden="true">0{index + 1}</p>
+                      <h3>{step.title}</h3>
+                      <p>{step.description}</p>
+                      {step.link && <a class="text-link" href={step.link.href}>{step.link.label} <span class="arrow" aria-hidden="true"></span></a>}
+                    </div>
+                  ) : (
+                    <div class="step-copy next-angle">
+                      <h4>Move to the next angle.</h4>
+                      <p>Step around the vehicle and line up with the next frame.</p>
+                    </div>
+                  )}
+                  <img class="workflow-inline" src={framePath(frame.id)} width={frame.width} height={frame.height} style={{ '--image-ratio': frame.width / frame.height }} loading="lazy" decoding="async" alt={frame.alt} />
+                </div>
+              ))}
+            </li>
+          ))}
+        </ol>
+        <div class="workflow-stage" aria-hidden="true">
+          {steps.map(({ frames }) => frames.map((frame) => (
+            <img class="stage-frame" data-frame={frame.id} style={{ '--frame-timeline': `--${frame.id}` }} src={framePath(frame.id)} width={frame.width} height={frame.height} loading="lazy" decoding="async" alt="" />
+          )))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="product-callout">
+    <div class="wrap">
+      <div><h2>Walk through your setup.</h2><p>Tell us how your team captures photos and where you publish them today.</p></div>
+      <a class="button" href={bookingUrl}>Book a demo</a>
+    </div>
+  </section>
+</SiteLayout>
+
+<style>
+  .photo-hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: clamp(1.6rem, 4.5vw, 5.5rem);
+  }
+
+  .photo-hero h1 { font-size: clamp(3.3rem, 1.8rem + 4.8vw, 6.5rem); }
+  .photo-hero em { color: var(--accent); font-style: normal; }
+  .photo-hero-image { width: 100%; height: auto; border-radius: 0.65rem; }
+  .photo-hero .text-link, .step-copy .text-link { color: var(--accent); }
+
+  .workflow {
+    --workflow-title-size: clamp(2rem, 1.5rem + 2.6vw, 4.1rem);
+    --workflow-title-gap: 0.85rem;
+    --workflow-padding: 0.85rem;
+    --workflow-gap: 0.6rem;
+    --workflow-stage-gap: 0.75rem;
+    --workflow-link-size: 2.75rem;
+    --workflow-nav-rows: 1;
+    --workflow-inset: calc(var(--workflow-title-size) + 2 * var(--workflow-padding) + var(--workflow-title-gap) + var(--workflow-link-size) * var(--workflow-nav-rows) + var(--workflow-gap) * (var(--workflow-nav-rows) - 1) + var(--workflow-stage-gap));
+    padding-block-start: clamp(1.5rem, 3.5vw, 3.25rem);
+    padding-block-end: clamp(3rem, 6vw, 6rem);
+    background: linear-gradient(var(--background), #131113 22% 80%, var(--background));
+  }
+
+  .workflow-heading {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    padding-block: var(--workflow-padding);
+    background: #110f10;
+  }
+
+  .workflow-heading h2 { font-size: var(--workflow-title-size); line-height: 1; }
+
+  .workflow-nav {
+    --workflow-nav-columns: 4;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--workflow-nav-columns), minmax(0, 1fr));
+    margin-block-start: var(--workflow-title-gap);
+    gap: var(--workflow-gap);
+    min-inline-size: 0;
+    border-radius: 0.4rem;
+    background: #1a1819;
+  }
+
+  .workflow-nav a {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-block-size: var(--workflow-link-size);
+    padding: 0.5rem 0.8rem;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 650;
+  }
+
+  .workflow-nav a:hover { background: #2c2421; }
+  .workflow-nav span, .step-number {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .workflow-steps {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .workflow-steps > li, .workflow-beat { scroll-margin-block-start: var(--workflow-inset); }
+  .workflow-steps > li:focus-visible { outline: none; }
+  .workflow-steps > li:focus-visible h3 { text-decoration: underline 2px var(--accent); text-underline-offset: 0.15em; }
+  .workflow-beat { padding-block: clamp(1.4rem, 4vw, 3rem); }
+  .step-number { font: 700 1.3rem/1 var(--display); letter-spacing: 0.06em; }
+
+  .step-copy h3, .step-copy h4 {
+    margin: 0.4rem 0 0;
+    font: 700 clamp(2.55rem, 1.5rem + 3vw, 4.5rem)/0.96 var(--display);
+    text-wrap: balance;
+  }
+
+  .step-copy h4 { font-size: clamp(1.9rem, 1.4rem + 1.5vw, 3rem); }
+  .step-copy p:not(.step-number) { margin-block-start: 0.9rem; max-inline-size: 38ch; color: var(--muted); }
+  .step-copy .text-link { display: inline-flex; margin-block-start: 1rem; }
+  .next-angle { margin-block-start: -0.45rem; }
+
+  .workflow-inline {
+    margin-block-start: 1.25rem;
+    inline-size: min(100%, calc(min(72svh, 43rem) * var(--image-ratio)));
+    height: auto;
+    aspect-ratio: var(--image-ratio);
+    object-fit: contain;
+    margin-inline: auto;
+    border-radius: 0.4rem;
+  }
+
+  .workflow-stage { display: none; }
+
+  @media (min-width: 53.01rem) {
+    .workflow-beat {
+      display: grid;
+      grid-template-columns: minmax(16rem, 0.66fr) minmax(0, 1.34fr);
+      align-items: center;
+      gap: clamp(2rem, 6vw, 6rem);
+    }
+  }
+
+  @media (max-width: 53rem) {
+    .photo-hero-layout { grid-template-columns: minmax(0, 1fr); }
+    .photo-hero h1 { max-inline-size: none; }
+  }
+
+  @media (max-width: 39rem) {
+    .workflow {
+      --workflow-title-size: clamp(1.55rem, 6.5vw, 2rem);
+      --workflow-gap: 0.35rem;
+      --workflow-nav-rows: 2;
+    }
+    .workflow-nav { --workflow-nav-columns: 2; }
+    .workflow-nav a { padding-inline: 0.6rem; gap: 0.4rem; font-size: 0.8rem; }
+  }
+
+  @media (max-height: 29rem) {
+    .workflow {
+      --workflow-title-size: 1.75rem;
+      --workflow-title-gap: 0.5rem;
+      --workflow-padding: 0.5rem;
+    }
+  }
+
+  @media (min-width: 35rem) and (max-height: 29rem) {
+    .workflow { --workflow-nav-rows: 1; }
+    .workflow-nav { --workflow-nav-columns: 4; }
+  }
+
+  @supports (scroll-target-group: auto) and selector(a:target-current) {
+    .workflow-nav { scroll-target-group: auto; }
+
+    .workflow-nav::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      inline-size: calc((100% - (var(--workflow-nav-columns) - 1) * var(--workflow-gap)) / var(--workflow-nav-columns));
+      block-size: var(--workflow-link-size);
+      border: 1px solid #a96643;
+      border-radius: 0.35rem;
+      background: #2c2421;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(
+        calc(var(--marker-column, 0) * (100% + var(--workflow-gap))),
+        calc(var(--marker-row, 0) * (100% + var(--workflow-gap)))
+      );
+    }
+
+    .workflow-nav:has(a:target-current)::before { opacity: 1; }
+    .workflow-nav:has(a:nth-child(2):target-current) { --marker-column: 1; }
+    .workflow-nav:has(a:nth-child(3):target-current) { --marker-column: 2; }
+    .workflow-nav:has(a:nth-child(4):target-current) { --marker-column: 3; }
+
+    @media (max-width: 39rem) {
+      .workflow-nav:has(a:nth-child(3):target-current) { --marker-column: 0; --marker-row: 1; }
+      .workflow-nav:has(a:nth-child(4):target-current) { --marker-column: 1; --marker-row: 1; }
+    }
+
+    @media (min-width: 35rem) and (max-width: 39rem) and (max-height: 29rem) {
+      .workflow-nav:has(a:nth-child(3):target-current) { --marker-column: 2; --marker-row: 0; }
+      .workflow-nav:has(a:nth-child(4):target-current) { --marker-column: 3; --marker-row: 0; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .workflow-nav::before { transition: transform 370ms cubic-bezier(0.25, 0.75, 0.25, 1), opacity 160ms ease; }
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports ((animation-timeline: view()) and (animation-range: entry)) {
+      .workflow-inline {
+        animation: settle-frame auto linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 32%;
+      }
+
+      @keyframes settle-frame {
+        from { opacity: 0.55; transform: translateY(1rem); }
+        to { opacity: 1; transform: none; }
+      }
+    }
+  }
+
+  @media (min-width: 61rem) and (min-height: 40rem) and (prefers-reduced-motion: no-preference) {
+    @supports ((animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --frame)) {
+      :global(html:has(#capture-workflow)) { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+      :global(html:has(#capture-workflow) .site-header-slot) { scroll-snap-align: start; }
+      :global(html:has(#capture-workflow) .site-footer) { scroll-snap-align: end; }
+
+      .workflow-layout {
+        display: grid;
+        grid-template-columns: minmax(16rem, 0.7fr) minmax(0, 1.3fr);
+        align-items: start;
+        gap: clamp(2rem, 5vw, 5rem);
+        padding-block-start: var(--workflow-stage-gap);
+        timeline-scope: var(--workflow-timelines);
+      }
+
+      .workflow-beat {
+        grid-template-columns: minmax(0, 1fr);
+        align-content: center;
+        gap: 0;
+        position: relative;
+        min-block-size: max(22rem, calc(100svh - var(--workflow-inset) - 1rem));
+        padding-block: 1.5rem;
+        scroll-snap-align: start;
+        view-timeline-name: var(--frame-timeline);
+        view-timeline-inset: 56% calc(44% - 1px);
+      }
+
+      .workflow-inline {
+        position: absolute;
+        inset: 0 auto auto 0;
+        inline-size: 1px;
+        block-size: 1px;
+        margin: 0;
+        clip-path: inset(50%);
+        animation: none;
+      }
+
+      .workflow-stage {
+        display: grid;
+        place-items: center;
+        position: sticky;
+        inset-block-start: var(--workflow-inset);
+        block-size: min(calc(100svh - var(--workflow-inset) - var(--floating-header-clearance)), 44rem);
+      }
+
+      .stage-frame {
+        grid-area: 1 / 1;
+        width: 100%;
+        height: 100%;
+        min-block-size: 0;
+        object-fit: contain;
+        animation: show-frame auto steps(1, end) both, hide-frame auto steps(1, end) forwards, ease-frame-change auto ease-in-out both;
+        animation-timeline: var(--frame-timeline), var(--frame-timeline), var(--frame-timeline);
+        animation-range: entry, exit, cover;
+      }
+
+      .stage-frame:first-child { animation-name: none, hide-frame, ease-frame-change; }
+      .stage-frame:last-child { animation-name: show-frame, none, ease-frame-change; }
+
+      @keyframes show-frame {
+        from { visibility: hidden; }
+        to { visibility: visible; }
+      }
+
+      @keyframes hide-frame {
+        from { visibility: visible; }
+        to { visibility: hidden; }
+      }
+
+      @keyframes ease-frame-change {
+        0% { opacity: 0.87; transform: translateY(0.45rem); }
+        16%, 84% { opacity: 1; transform: none; }
+        100% { opacity: 0.87; transform: translateY(-0.45rem); }
+      }
+    }
+  }
+</style>
