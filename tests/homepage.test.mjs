@@ -129,12 +129,17 @@ test('every launch route is built, linked, and included in the sitemap', async (
   assert.match(campaign, /data-comparison-pairs=/);
 });
 
-test('the upload and enquiry previews have on-page controls without live handoffs', async () => {
+test('both vehicle uploaders and the demo enquiry have on-page controls', async () => {
   const read = (slug) => readFile(new URL('../dist/' + slug + '/index.html', import.meta.url), 'utf8');
   const photo = await read('try-it');
+  const home = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
   const demo = await read('book-a-demo');
-  assert.match(photo, /<input[^>]*type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(photo, /id="photo-preview"/);
+  for (const page of [home, photo]) {
+    assert.match(page, /<input[^>]*type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/);
+    assert.match(page, /id="photo-preview"/);
+    assert.match(page, /data-process-label[^>]*>Create showroom photo</);
+    assert.match(page, /data-photo-view="showroom"[^>]*>Showroom</);
+  }
   assert.match(demo, /<form[^>]*id="demo-form"/);
   assert.match(demo, /id="demo-email"[^>]*type="email"[^>]*required/);
   assert.match(demo, /Request My Inventory Demo/);
@@ -160,7 +165,9 @@ test('the automatic comparison pairs each lot photo with three processed front-l
     const original = await readFile(new URL(`../src/assets/visualizer/${id}/${room}/8.jpg`, import.meta.url));
     assert.deepEqual(await readFile(new URL(`../dist${pair.after}`, import.meta.url)), original);
   }
-  assert.doesNotMatch(page, /type="range"|comparison-range|AutoPixelAI sample|>Original<|>Split<|>Finished<|<button\b[^>]*>\s*Pause/i);
+  const sample = page.slice(page.indexOf('<section id="sample-result"'));
+  assert.doesNotMatch(sample, /type="range"|comparison-range|AutoPixelAI sample|>Original<|>Split<|>Finished</i);
+  assert.doesNotMatch(page, /<button\b[^>]*>\s*Pause/i);
 });
 
 test('the product routes are linked, render canonical URLs, and include their sample imagery', async () => {

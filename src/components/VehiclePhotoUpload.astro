@@ -11,10 +11,15 @@
       <div class="photo-image"></div>
       <figcaption><span id="photo-filename"></span><button class="text-link clear-photo" type="button">Remove photo</button></figcaption>
     </figure>
+    <button class="button process-photo" type="button" hidden><span data-process-label>Create showroom photo</span> <span class="arrow" aria-hidden="true"></span></button>
+    <div class="photo-views" role="group" aria-label="View your photo" hidden>
+      <button class="button button-outline" type="button" data-photo-view="original" aria-pressed="false">Original</button>
+      <button class="button button-outline" type="button" data-photo-view="showroom" aria-pressed="true">Showroom</button>
+    </div>
   </div>
   <p id="upload-status" role="status"></p>
-  <p class="preview-note">Local preview · Your photo stays on this page.</p>
-  <noscript><p>Enable JavaScript to preview your photo.</p></noscript>
+  <p class="preview-note" hidden>Your photo is sent to AutoBG when you select Create showroom photo.</p>
+  <noscript><p>Enable JavaScript to preview and process your photo.</p></noscript>
 </section>
 
 <script>
@@ -24,14 +29,36 @@
   const imageSlot = document.querySelector('.photo-image')!;
   const filename = document.querySelector('#photo-filename')!;
   const status = document.querySelector('#upload-status')!;
+  const processButton = document.querySelector<HTMLButtonElement>('.process-photo')!;
+  const processLabel = processButton.querySelector('[data-process-label]')!;
+  const note = document.querySelector<HTMLElement>('.preview-note')!;
+  const views = document.querySelector<HTMLElement>('.photo-views')!;
+  const viewButtons = views.querySelectorAll<HTMLButtonElement>('[data-photo-view]');
   const types = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  let currentUrl = '';
+  type Photo = { file: File; original: HTMLImageElement; receipt?: string; result?: HTMLImageElement };
+  type JobState = { state: 'processing' | 'paused' | 'ready' | 'failed'; imageUrl?: string; message?: string };
+  let current: Photo | undefined;
+  let stream: EventSource | undefined;
+  const config = fetch('/api/demo/config', { signal: AbortSignal.timeout(10000) })
+    .then(async (response) => response.ok && (await response.json()).enabled === true)
+    .catch(() => false);
+
+  function closeStream() {
+    stream?.close();
+    stream = undefined;
+  }
 
   function clearPhoto() {
-    if (currentUrl) URL.revokeObjectURL(currentUrl);
-    currentUrl = '';
+    closeStream();
+    if (current) URL.revokeObjectURL(current.original.src);
+    current = undefined;
     imageSlot.replaceChildren();
     preview.hidden = true;
+    note.hidden = true;
+    views.hidden = true;
+    processButton.hidden = true;
+    processButton.disabled = false;
+    processLabel.textContent = 'Create showroom photo';
     input.removeAttribute('aria-invalid');
     status.textContent = '';
   }
@@ -44,27 +71,133 @@
   async function showPhoto(file: File) {
     clearPhoto();
     if (!types.has(file.type)) return showError('Choose a JPG, PNG or WebP image.');
-    if (file.size > 15 * 1024 * 1024) return showError('Choose an image under 15 MB.');
+    if (file.size > 15_000_000) return showError('Choose an image no larger than 15 MB.');
 
-    const url = URL.createObjectURL(file);
-    currentUrl = url;
     const image = new Image();
-    image.alt = 'Selected vehicle photo';
-    image.src = url;
+    image.alt = 'Your original vehicle photo';
+    image.src = URL.createObjectURL(file);
+    const photo: Photo = { file, original: image };
+    current = photo;
     try {
       await image.decode();
     } catch {
-      if (currentUrl !== url) return;
+      if (current !== photo) return;
       clearPhoto();
       showError('This image could not be opened. Try a different photo.');
       return;
     }
-    if (currentUrl !== url) return;
+    if (current !== photo) return;
     imageSlot.replaceChildren(image);
     filename.textContent = file.name;
     preview.hidden = false;
     status.textContent = 'Photo preview ready.';
+    const enabled = await config;
+    if (current !== photo) return;
+    processButton.hidden = note.hidden = !enabled;
+    if (!enabled) status.textContent = 'Original photo preview ready. Showroom processing is currently unavailable.';
   }
+
+  function checkAgain(message: string) {
+    closeStream();
+    processLabel.textContent = 'Check result';
+    processButton.disabled = false;
+    status.textContent = message;
+  }
+
+  function showView(view: string) {
+    if (!current?.result) return;
+    imageSlot.replaceChildren(view === 'showroom' ? current.result : current.original);
+    for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset.photoView === view));
+  }
+
+  async function receive(photo: Photo, job: JobState) {
+    if (current !== photo) return;
+    if (job.state === 'processing') {
+      status.textContent = job.message || 'Creating your showroom photo…';
+      return;
+    }
+    closeStream();
+    if (job.state === 'paused') {
+      checkAgain(job.message || 'Your photo is still processing. Check for the result again shortly.');
+      return;
+    }
+    if (job.state === 'failed' || !job.imageUrl) {
+      processButton.hidden = true;
+      status.textContent = job.message || 'This photo could not be processed. Try another vehicle photo.';
+      return;
+    }
+    const finished = new Image();
+    finished.alt = 'Your vehicle photo with a showroom background';
+    finished.referrerPolicy = 'no-referrer';
+    finished.src = job.imageUrl;
+    try {
+      await finished.decode();
+    } catch {
+      if (current === photo) checkAgain('The finished photo could not load. Check the result again.');
+      return;
+    }
+    if (current !== photo) return;
+    photo.result = finished;
+    processButton.hidden = true;
+    views.hidden = false;
+    showView('showroom');
+    status.textContent = 'Your showroom photo is ready.';
+  }
+
+  function watch(photo: Photo) {
+    const events = new EventSource(`/api/demo/jobs/${photo.receipt}/events`);
+    stream = events;
+    events.onmessage = (event) => { if (stream === events) void receive(photo, JSON.parse(event.data)); };
+    events.onerror = () => {
+      if (stream === events) checkAgain('The connection was interrupted. Check the result to continue.');
+    };
+  }
+
+  processButton.addEventListener('click', async () => {
+    const photo = current;
+    if (!photo || processButton.disabled) return;
+    processButton.disabled = true;
+    if (photo.receipt) {
+      status.textContent = 'Checking your showroom photo…';
+      try {
+        const response = await fetch(`/api/demo/jobs/${photo.receipt}`, { signal: AbortSignal.timeout(20000) });
+        const job = await response.json();
+        if (current !== photo) return;
+        if (response.status === 404 || response.status === 410) {
+          processButton.hidden = true;
+          status.textContent = job.message;
+          return;
+        }
+        if (!response.ok) throw new Error(job.message);
+        await receive(photo, job);
+        if (current === photo && job.state === 'processing') watch(photo);
+      } catch {
+        if (current === photo) checkAgain('Could not check the result. Try again shortly.');
+      }
+      return;
+    }
+
+    status.textContent = 'Uploading your photo…';
+    note.hidden = true;
+    try {
+      const body = new FormData();
+      body.set('image', photo.file);
+      body.set('submissionId', crypto.randomUUID());
+      const response = await fetch('/api/demo/jobs', { method: 'POST', body, signal: AbortSignal.timeout(95000) });
+      const job = await response.json();
+      if (current !== photo) return;
+      if (!response.ok || !job.receipt) throw new Error(job.message || 'Could not confirm the upload. Your photo may already be processing.');
+      photo.receipt = job.receipt;
+      status.textContent = 'Creating your showroom photo…';
+      watch(photo);
+    } catch (error) {
+      if (current !== photo) return;
+      processButton.hidden = true;
+      status.textContent = error instanceof Error && error.name === 'Error' ? error.message : 'Could not confirm the upload. Your photo may already be processing.';
+    }
+  });
+
+  for (const button of viewButtons) button.addEventListener('click', () => showView(button.dataset.photoView!));
 
   input.addEventListener('change', () => {
     const file = input.files?.[0];
@@ -90,7 +223,8 @@
     input.focus();
   });
   window.addEventListener('pagehide', (event) => {
-    if (!event.persisted && currentUrl) URL.revokeObjectURL(currentUrl);
+    if (stream) checkAgain('Check your photo to see if the showroom result is ready.');
+    if (!event.persisted && current) URL.revokeObjectURL(current.original.src);
   });
 </script>
 
@@ -134,6 +268,11 @@
   figcaption { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   #photo-filename { overflow-wrap: anywhere; font-size: 0.86rem; }
   .clear-photo { flex: none; padding: 0; background: none; border: 0; color: var(--muted); }
+  .process-photo, .photo-views { margin-block-start: 1rem; }
+  .process-photo:disabled { opacity: 0.6; cursor: wait; }
+  .photo-views:not([hidden]) { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .photo-views [aria-pressed="true"] { background: var(--accent); color: #191310; }
+  .process-photo[hidden] { display: none; }
 
   @media (pointer: coarse) { .drop-hint { display: none; } }
 </style>

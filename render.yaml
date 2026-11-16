@@ -19,3 +19,7 @@ services:
         sync: false
       - key: TURNSTILE_SECRET_KEY
         sync: false
+      - key: Autobg_API_KEY
+        sync: false
+      - key: DEMO_JOB_SECRET
+        sync: false

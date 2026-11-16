@@ -13,7 +13,9 @@ The homepage hero uses a dealership poster until a video is available. Put the f
 
 The product pages use samples from the live [AutoPixelAI asset library](https://www.autopixelai.com/). The local showroom gallery has 12 examples, category links, and an enlarged preview.
 
-Try a Photo previews the chosen image in the browser. The demo and Black Friday forms use local previews on loopback addresses. On the hosted site, both use the same-origin lead endpoint and require a verified Turnstile response before sending an email to `team@autopixelai.com`.
+The homepage and Try a Photo preview the chosen image in the browser. **Create showroom photo** sends it to AutoBG for processing and displays the finished image alongside an option to view the original. To use the processor locally, run `npm run build` then `node --env-file=.env server/index.mjs` with the AutoBG settings in `.env`. The Astro dev server supports the local preview.
+
+The demo and Black Friday forms use local previews on loopback addresses. On the hosted site, both use the same-origin lead endpoint and require a verified Turnstile response before sending an email to `team@autopixelai.com`.
 
 ## Render
 
@@ -26,5 +28,7 @@ For the existing Node web service, open **Settings → Build → Source → Edit
 - An SMTP-capable instance such as Starter. [Render's SMTP port policy](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports)
 
 Keep the existing `GOOGLE_SMTP_USER`, `GOOGLE_SMTP_APP_PASSWORD`, `TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY` values in Render. Add any missing values and allow any new deployment hostname in Turnstile. The endpoint records the time of campaign enquiries and returns a reference after Gmail accepts the message. When credentials are absent, the site remains available and the forms offer the contact email.
+
+For photo processing, keep the existing `Autobg_API_KEY` (case-sensitive) and `DEMO_JOB_SECRET` in Render. If you need a new receipt secret, generate it with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` and keep it stable across deploys. Once deployed, `/api/demo/config` should return `{"enabled":true}`. Without these values, the uploader offers a local preview. The processor uses the same AutoBG account and template as the existing demo.
 
 For a staged service, set `NOINDEX=true`. Verify the health endpoint, the enabled lead configuration, and receipt of an authorized test enquiry before switching the live domain. The existing service can continue serving the current website while the overhaul is reviewed.
