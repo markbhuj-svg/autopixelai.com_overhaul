@@ -137,7 +137,9 @@ test('both vehicle uploaders and the demo enquiry have on-page controls', async 
   for (const page of [home, photo]) {
     assert.match(page, /<input[^>]*type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/);
     assert.match(page, /id="photo-preview"/);
-    assert.match(page, /data-process-label[^>]*>Create showroom photo</);
+    assert.match(page, /<progress[^>]*aria-label="Photo processing"/);
+    assert.match(page, /<button[^>]*>Try another photo</);
+    assert.doesNotMatch(page, /data-process-label|id="photo-filename"|>Remove photo<|Photo preview ready\./);
     assert.match(page, /data-photo-view="showroom"[^>]*>Showroom</);
   }
   assert.match(demo, /<form[^>]*id="demo-form"/);

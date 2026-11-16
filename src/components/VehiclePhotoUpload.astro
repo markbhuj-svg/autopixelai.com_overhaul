@@ -1,47 +1,71 @@
 <section id="image-demo" tabindex="-1" class="upload-panel" aria-labelledby="upload-title">
   <h2 id="upload-title">Vehicle photo</h2>
   <div class="drop-zone">
-    <input class="visually-hidden" id="vehicle-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-formats upload-status" />
+    <input class="visually-hidden" id="vehicle-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-formats photo-processing-note upload-status" />
     <label class="button upload-button" for="vehicle-photo">Choose a photo <span class="arrow" aria-hidden="true"></span></label>
     <p class="drop-hint">or drag and drop it here</p>
     <p id="photo-formats">JPG, PNG or WebP · up to 15 MB</p>
+    <p id="photo-processing-note" hidden>Selected photos are sent to AutoBG for processing.</p>
   </div>
   <div id="photo-preview" hidden>
-    <figure>
-      <div class="photo-image"></div>
-      <figcaption><span id="photo-filename"></span><button class="text-link clear-photo" type="button">Remove photo</button></figcaption>
-    </figure>
-    <button class="button process-photo" type="button" hidden><span data-process-label>Create showroom photo</span> <span class="arrow" aria-hidden="true"></span></button>
+    <div class="photo-image"></div>
+  </div>
+  <div class="photo-feedback">
+    <progress class="photo-spinner" aria-label="Photo processing" hidden></progress>
+    <div>
+      <p id="upload-status" role="status"></p>
+      <p class="photo-hint"></p>
+    </div>
+  </div>
+  <div class="photo-actions" hidden>
     <div class="photo-views" role="group" aria-label="View your photo" hidden>
       <button class="button button-outline" type="button" data-photo-view="original" aria-pressed="false">Original</button>
       <button class="button button-outline" type="button" data-photo-view="showroom" aria-pressed="true">Showroom</button>
     </div>
+    <button class="button check-result" type="button" hidden>Check result</button>
+    <button class="text-link try-another" type="button">Try another photo</button>
   </div>
-  <p id="upload-status" role="status"></p>
-  <p class="preview-note" hidden>Your photo is sent to AutoBG when you select Create showroom photo.</p>
   <noscript><p>Enable JavaScript to preview and process your photo.</p></noscript>
 </section>
 
 <script>
+  const panel = document.querySelector<HTMLElement>('#image-demo')!;
   const input = document.querySelector<HTMLInputElement>('#vehicle-photo')!;
   const dropZone = document.querySelector<HTMLElement>('.drop-zone')!;
   const preview = document.querySelector<HTMLElement>('#photo-preview')!;
   const imageSlot = document.querySelector('.photo-image')!;
-  const filename = document.querySelector('#photo-filename')!;
   const status = document.querySelector('#upload-status')!;
-  const processButton = document.querySelector<HTMLButtonElement>('.process-photo')!;
-  const processLabel = processButton.querySelector('[data-process-label]')!;
-  const note = document.querySelector<HTMLElement>('.preview-note')!;
+  const indicator = document.querySelector<HTMLProgressElement>('.photo-spinner')!;
+  const hint = document.querySelector('.photo-hint')!;
+  const note = document.querySelector<HTMLElement>('#photo-processing-note')!;
+  const actions = document.querySelector<HTMLElement>('.photo-actions')!;
+  const checkButton = document.querySelector<HTMLButtonElement>('.check-result')!;
+  const resetButton = document.querySelector<HTMLButtonElement>('.try-another')!;
   const views = document.querySelector<HTMLElement>('.photo-views')!;
   const viewButtons = views.querySelectorAll<HTMLButtonElement>('[data-photo-view]');
   const types = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  type Photo = { file: File; original: HTMLImageElement; receipt?: string; result?: HTMLImageElement };
+  type Photo = { original: HTMLImageElement; receipt?: string; result?: HTMLImageElement };
   type JobState = { state: 'processing' | 'paused' | 'ready' | 'failed'; imageUrl?: string; message?: string };
   let current: Photo | undefined;
   let stream: EventSource | undefined;
+  let rotation: number | undefined;
+  const waitingCopy = {
+    uploading: ['Sending your photo…', ['Keep this page open while the upload finishes.']],
+    processing: ['Creating your showroom photo…', [
+      'We’re applying the showroom background.',
+      'Your result will appear here automatically.',
+      'You’ll be able to compare it with your original.',
+    ]],
+    loading: ['Loading the finished photo…', ['Your showroom image is ready.']],
+    checking: ['Checking your result…', ['We’re checking the photo you already sent.']],
+  } as const;
   const config = fetch('/api/demo/config', { signal: AbortSignal.timeout(10000) })
     .then(async (response) => response.ok && (await response.json()).enabled === true)
-    .catch(() => false);
+    .catch(() => false)
+    .then((enabled) => {
+      note.hidden = !enabled;
+      return enabled;
+    });
 
   function closeStream() {
     stream?.close();
@@ -54,29 +78,62 @@
     current = undefined;
     imageSlot.replaceChildren();
     preview.hidden = true;
-    note.hidden = true;
+    dropZone.hidden = false;
+    actions.hidden = true;
     views.hidden = true;
-    processButton.hidden = true;
-    processButton.disabled = false;
-    processLabel.textContent = 'Create showroom photo';
+    checkButton.hidden = true;
+    checkButton.removeAttribute('aria-disabled');
     input.removeAttribute('aria-invalid');
-    status.textContent = '';
+    showStatus('');
+  }
+
+  function showStatus(message: string) {
+    window.clearInterval(rotation);
+    indicator.hidden = true;
+    hint.textContent = '';
+    status.textContent = message;
+  }
+
+  function showWaiting(phase: keyof typeof waitingCopy) {
+    const [message, tips] = waitingCopy[phase];
+    if (!indicator.hidden && status.textContent === message) return;
+    showStatus(message);
+    indicator.hidden = false;
+    hint.textContent = tips[0];
+    if (tips.length > 1) {
+      let index = 0;
+      rotation = window.setInterval(() => {
+        index = (index + 1) % tips.length;
+        hint.textContent = tips[index];
+      }, 6000);
+    }
+  }
+
+  function showOutcome(message: string, canCheck = false) {
+    const restoreFocus = document.activeElement === checkButton;
+    showStatus(message);
+    actions.hidden = false;
+    checkButton.hidden = !canCheck;
+    checkButton.removeAttribute('aria-disabled');
+    if (restoreFocus && checkButton.hidden) resetButton.focus();
   }
 
   function showError(message: string) {
     input.setAttribute('aria-invalid', 'true');
-    status.textContent = message;
+    showStatus(message);
   }
 
   async function showPhoto(file: File) {
+    if (current) return;
     clearPhoto();
     if (!types.has(file.type)) return showError('Choose a JPG, PNG or WebP image.');
+    if (!file.size) return showError('This photo is empty. Choose another image.');
     if (file.size > 15_000_000) return showError('Choose an image no larger than 15 MB.');
 
     const image = new Image();
     image.alt = 'Your original vehicle photo';
     image.src = URL.createObjectURL(file);
-    const photo: Photo = { file, original: image };
+    const photo: Photo = { original: image };
     current = photo;
     try {
       await image.decode();
@@ -87,21 +144,21 @@
       return;
     }
     if (current !== photo) return;
+    if (document.activeElement === document.body || dropZone.contains(document.activeElement)) {
+      panel.focus({ preventScroll: true });
+    }
     imageSlot.replaceChildren(image);
-    filename.textContent = file.name;
     preview.hidden = false;
-    status.textContent = 'Photo preview ready.';
+    dropZone.hidden = true;
     const enabled = await config;
     if (current !== photo) return;
-    processButton.hidden = note.hidden = !enabled;
-    if (!enabled) status.textContent = 'Original photo preview ready. Showroom processing is currently unavailable.';
+    if (enabled) await upload(photo, file);
+    else showOutcome('Showroom processing is currently unavailable. You can still view your original.');
   }
 
   function checkAgain(message: string) {
     closeStream();
-    processLabel.textContent = 'Check result';
-    processButton.disabled = false;
-    status.textContent = message;
+    showOutcome(message, true);
   }
 
   function showView(view: string) {
@@ -113,7 +170,8 @@
   async function receive(photo: Photo, job: JobState) {
     if (current !== photo) return;
     if (job.state === 'processing') {
-      status.textContent = job.message || 'Creating your showroom photo…';
+      showWaiting('processing');
+      if (job.message) hint.textContent = job.message;
       return;
     }
     closeStream();
@@ -122,10 +180,10 @@
       return;
     }
     if (job.state === 'failed' || !job.imageUrl) {
-      processButton.hidden = true;
-      status.textContent = job.message || 'This photo could not be processed. Try another vehicle photo.';
+      showOutcome(job.message || 'This photo could not be processed. Try another vehicle photo.');
       return;
     }
+    showWaiting('loading');
     const finished = new Image();
     finished.alt = 'Your vehicle photo with a showroom background';
     finished.referrerPolicy = 'no-referrer';
@@ -138,10 +196,9 @@
     }
     if (current !== photo) return;
     photo.result = finished;
-    processButton.hidden = true;
     views.hidden = false;
     showView('showroom');
-    status.textContent = 'Your showroom photo is ready.';
+    showOutcome('Your showroom photo is ready.');
   }
 
   function watch(photo: Photo) {
@@ -153,49 +210,45 @@
     };
   }
 
-  processButton.addEventListener('click', async () => {
+  checkButton.addEventListener('click', async () => {
     const photo = current;
-    if (!photo || processButton.disabled) return;
-    processButton.disabled = true;
-    if (photo.receipt) {
-      status.textContent = 'Checking your showroom photo…';
-      try {
-        const response = await fetch(`/api/demo/jobs/${photo.receipt}`, { signal: AbortSignal.timeout(20000) });
-        const job = await response.json();
-        if (current !== photo) return;
-        if (response.status === 404 || response.status === 410) {
-          processButton.hidden = true;
-          status.textContent = job.message;
-          return;
-        }
-        if (!response.ok) throw new Error(job.message);
-        await receive(photo, job);
-        if (current === photo && job.state === 'processing') watch(photo);
-      } catch {
-        if (current === photo) checkAgain('Could not check the result. Try again shortly.');
+    if (!photo?.receipt || checkButton.getAttribute('aria-disabled') === 'true') return;
+    checkButton.setAttribute('aria-disabled', 'true');
+    showWaiting('checking');
+    try {
+      const response = await fetch(`/api/demo/jobs/${photo.receipt}`, { signal: AbortSignal.timeout(20000) });
+      const job = await response.json();
+      if (current !== photo) return;
+      if (response.status === 404 || response.status === 410) {
+        showOutcome(job.message || 'This result is no longer available. Try another photo.');
+        return;
       }
-      return;
+      if (!response.ok) throw new Error(job.message);
+      await receive(photo, job);
+      if (current === photo && job.state === 'processing') watch(photo);
+    } catch {
+      if (current === photo) checkAgain('Could not check the result. Try again shortly.');
     }
+  });
 
-    status.textContent = 'Uploading your photo…';
-    note.hidden = true;
+  async function upload(photo: Photo, file: File) {
+    showWaiting('uploading');
     try {
       const body = new FormData();
-      body.set('image', photo.file);
+      body.set('image', file);
       body.set('submissionId', crypto.randomUUID());
       const response = await fetch('/api/demo/jobs', { method: 'POST', body, signal: AbortSignal.timeout(95000) });
       const job = await response.json();
       if (current !== photo) return;
       if (!response.ok || !job.receipt) throw new Error(job.message || 'Could not confirm the upload. Your photo may already be processing.');
       photo.receipt = job.receipt;
-      status.textContent = 'Creating your showroom photo…';
+      showWaiting('processing');
       watch(photo);
     } catch (error) {
       if (current !== photo) return;
-      processButton.hidden = true;
-      status.textContent = error instanceof Error && error.name === 'Error' ? error.message : 'Could not confirm the upload. Your photo may already be processing.';
+      showOutcome(error instanceof Error && error.name === 'Error' ? error.message : 'Could not confirm the upload. Your photo may already be processing.');
     }
-  });
+  }
 
   for (const button of viewButtons) button.addEventListener('click', () => showView(button.dataset.photoView!));
 
@@ -204,22 +257,27 @@
     if (file) void showPhoto(file);
     input.value = '';
   });
-  dropZone.addEventListener('dragover', (event) => {
+  panel.addEventListener('dragover', (event) => {
+    if (!event.dataTransfer?.types.includes('Files')) return;
     event.preventDefault();
-    dropZone.classList.add('is-dragging');
+    if (!current) dropZone.classList.add('is-dragging');
   });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'));
-  dropZone.addEventListener('drop', (event) => {
-    event.preventDefault();
-    dropZone.classList.remove('is-dragging');
+  panel.addEventListener('dragleave', (event) => {
+    if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget)) {
+      dropZone.classList.remove('is-dragging');
+    }
+  });
+  panel.addEventListener('drop', (event) => {
     const files = event.dataTransfer?.files;
     if (!files?.length) return;
+    event.preventDefault();
+    dropZone.classList.remove('is-dragging');
+    if (current) return;
     if (files.length === 1) void showPhoto(files[0]);
     else showError('Choose one vehicle photo at a time.');
   });
-  document.querySelector('.clear-photo')?.addEventListener('click', () => {
+  resetButton.addEventListener('click', () => {
     clearPhoto();
-    status.textContent = 'Photo removed.';
     input.focus();
   });
   window.addEventListener('pagehide', (event) => {
@@ -252,27 +310,51 @@
     color: var(--muted);
   }
 
+  .drop-zone[hidden] { display: none; }
   .drop-zone.is-dragging { background: #271d17; border-color: var(--accent); }
   .upload-button { cursor: pointer; min-block-size: 3rem; }
   #vehicle-photo:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 4px; }
-  #photo-formats, .preview-note { font-size: 0.84rem; color: var(--muted); }
-  .preview-note, #upload-status:not(:empty) { margin-block-start: 0.85rem; }
-  #upload-status { font-size: 0.86rem; color: var(--accent); }
-  figure { margin: 1rem 0 0; }
+  #photo-formats, #photo-processing-note { font-size: 0.84rem; color: var(--muted); }
+  #photo-preview { margin-block-start: 1rem; }
+  .photo-image { overflow: hidden; border-radius: 0.55rem; background: var(--background); }
   .photo-image :global(img) {
+    display: block;
     width: 100%;
     max-block-size: 24rem;
     object-fit: contain;
-    background: var(--background);
   }
-  figcaption { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  #photo-filename { overflow-wrap: anywhere; font-size: 0.86rem; }
-  .clear-photo { flex: none; padding: 0; background: none; border: 0; color: var(--muted); }
-  .process-photo, .photo-views { margin-block-start: 1rem; }
-  .process-photo:disabled { opacity: 0.6; cursor: wait; }
+  .photo-feedback { display: flex; align-items: start; gap: 0.7rem; }
+  .photo-feedback:has(#upload-status:not(:empty)) { margin-block-start: 1rem; }
+  #upload-status { font-weight: 700; }
+  .photo-hint { font-size: 0.875rem; color: var(--muted); }
+  .photo-spinner:not([hidden]) {
+    appearance: none;
+    flex: none;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    margin-block-start: 0.15rem;
+    border: 2px solid var(--rule);
+    border-inline-end-color: var(--accent);
+    border-radius: 50%;
+    background: transparent;
+    animation: photo-spin 1s linear infinite;
+  }
+  .photo-spinner::-webkit-progress-bar { background: transparent; }
+  .photo-spinner::-moz-progress-bar { background: transparent; }
+  @keyframes photo-spin { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .photo-spinner:not([hidden]) { animation: none; } }
+  .photo-actions:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-block-start: 0.85rem;
+  }
+  .try-another { padding: 0.65rem 0; background: none; border: 0; color: var(--muted); font-weight: 700; }
+  .check-result[aria-disabled="true"] { opacity: 0.6; cursor: wait; }
+  .check-result[hidden] { display: none; }
   .photo-views:not([hidden]) { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .photo-views [aria-pressed="true"] { background: var(--accent); color: #191310; }
-  .process-photo[hidden] { display: none; }
 
   @media (pointer: coarse) { .drop-hint { display: none; } }
 </style>
