@@ -7,7 +7,13 @@
     <p id="photo-formats">JPG, PNG or WebP · up to 15 MB</p>
   </div>
   <div id="photo-preview" hidden>
-    <div class="photo-image"></div>
+    <div class="photo-image">
+      <div class="original-preview"></div>
+      <button class="compare-photo" type="button" aria-label="Compare before and after" aria-haspopup="dialog" aria-controls="vehicle-photo-comparison" hidden>
+        <span class="compare-preview"></span>
+        <span class="compare-icon" aria-hidden="true"><span class="arrow"></span></span>
+      </button>
+    </div>
   </div>
   <div class="photo-feedback">
     <progress class="photo-spinner" aria-label="Photo processing" hidden></progress>
@@ -17,13 +23,21 @@
     </div>
   </div>
   <div class="photo-actions" hidden>
-    <div class="photo-views" role="group" aria-label="View your photo" hidden>
-      <button class="button button-outline" type="button" data-photo-view="original" aria-pressed="false">Original</button>
-      <button class="button button-outline" type="button" data-photo-view="showroom" aria-pressed="true">Showroom</button>
-    </div>
     <button class="button check-result" type="button" hidden>Check result</button>
-    <button class="text-link try-another" type="button">Try another photo</button>
+    <button class="text-link try-another" type="button">Choose another photo</button>
   </div>
+  <dialog id="vehicle-photo-comparison" class="photo-comparison-dialog" closedby="any" aria-labelledby="photo-comparison-title">
+    <div class="photo-comparison-header">
+      <h2 id="photo-comparison-title">Your photo, before and after</h2>
+      <form method="dialog">
+        <button class="close-comparison" type="submit" aria-label="Close comparison" autofocus></button>
+      </form>
+    </div>
+    <div class="photo-comparison-pair">
+      <figure><figcaption>Original</figcaption><div class="comparison-original"></div></figure>
+      <figure><figcaption>Showroom</figcaption><div class="comparison-finished"></div></figure>
+    </div>
+  </dialog>
   <noscript><p>Enable JavaScript to preview and process your photo.</p></noscript>
 </section>
 
@@ -32,17 +46,20 @@
   const input = document.querySelector<HTMLInputElement>('#vehicle-photo')!;
   const dropZone = document.querySelector<HTMLElement>('.drop-zone')!;
   const preview = document.querySelector<HTMLElement>('#photo-preview')!;
-  const imageSlot = document.querySelector('.photo-image')!;
+  const imageSlot = document.querySelector('.original-preview')!;
+  const compareButton = document.querySelector<HTMLButtonElement>('.compare-photo')!;
+  const comparePreview = compareButton.querySelector('.compare-preview')!;
+  const comparison = document.querySelector<HTMLDialogElement>('#vehicle-photo-comparison')!;
+  const originalComparison = comparison.querySelector('.comparison-original')!;
+  const finishedComparison = comparison.querySelector('.comparison-finished')!;
   const status = document.querySelector('#upload-status')!;
   const indicator = document.querySelector<HTMLProgressElement>('.photo-spinner')!;
   const hint = document.querySelector('.photo-hint')!;
   const actions = document.querySelector<HTMLElement>('.photo-actions')!;
   const checkButton = document.querySelector<HTMLButtonElement>('.check-result')!;
   const resetButton = document.querySelector<HTMLButtonElement>('.try-another')!;
-  const views = document.querySelector<HTMLElement>('.photo-views')!;
-  const viewButtons = views.querySelectorAll<HTMLButtonElement>('[data-photo-view]');
   const types = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  type Photo = { original: HTMLImageElement; receipt?: string; result?: HTMLImageElement };
+  type Photo = { original: HTMLImageElement; receipt?: string };
   type JobState = { state: 'processing' | 'paused' | 'ready' | 'failed'; imageUrl?: string; message?: string };
   let current: Photo | undefined;
   let stream: EventSource | undefined;
@@ -71,20 +88,24 @@
     if (current) URL.revokeObjectURL(current.original.src);
     current = undefined;
     imageSlot.replaceChildren();
+    comparePreview.replaceChildren();
+    originalComparison.replaceChildren();
+    finishedComparison.replaceChildren();
+    compareButton.hidden = true;
     preview.hidden = true;
     dropZone.hidden = false;
     actions.hidden = true;
-    views.hidden = true;
     checkButton.hidden = true;
     checkButton.removeAttribute('aria-disabled');
     input.removeAttribute('aria-invalid');
     showStatus('');
   }
 
-  function showStatus(message: string) {
+  function showStatus(message: string, announceOnly = false) {
     window.clearInterval(rotation);
     indicator.hidden = true;
     hint.textContent = '';
+    status.classList.toggle('visually-hidden', announceOnly);
     status.textContent = message;
   }
 
@@ -155,12 +176,6 @@
     showOutcome(message, true);
   }
 
-  function showView(view: string) {
-    if (!current?.result) return;
-    imageSlot.replaceChildren(view === 'showroom' ? current.result : current.original);
-    for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset.photoView === view));
-  }
-
   async function receive(photo: Photo, job: JobState) {
     if (current !== photo) return;
     if (job.state === 'processing') {
@@ -189,10 +204,14 @@
       return;
     }
     if (current !== photo) return;
-    photo.result = finished;
-    views.hidden = false;
-    showView('showroom');
-    showOutcome('Your showroom photo is ready.');
+    originalComparison.replaceChildren(photo.original);
+    finishedComparison.replaceChildren(finished.cloneNode());
+    comparePreview.replaceChildren(finished);
+    compareButton.hidden = false;
+    const restoreFocus = actions.contains(document.activeElement);
+    actions.hidden = true;
+    showStatus('Open the finished photo to compare it with the original.', true);
+    if (restoreFocus) compareButton.focus({ preventScroll: true });
   }
 
   function watch(photo: Photo) {
@@ -244,7 +263,21 @@
     }
   }
 
-  for (const button of viewButtons) button.addEventListener('click', () => showView(button.dataset.photoView!));
+  compareButton.addEventListener('click', () => comparison.showModal());
+  comparison.addEventListener('close', () => compareButton.focus({ preventScroll: true }));
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    let startedOutside = false;
+    comparison.addEventListener('pointerdown', (event) => { startedOutside = event.target === comparison; });
+    comparison.addEventListener('click', (event) => {
+      if (startedOutside && event.target === comparison) {
+        const box = comparison.getBoundingClientRect();
+        if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) {
+          comparison.close();
+        }
+      }
+      startedOutside = false;
+    });
+  }
 
   input.addEventListener('change', () => {
     const file = input.files?.[0];
@@ -310,15 +343,39 @@
   #vehicle-photo:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 4px; }
   #photo-formats { font-size: 0.84rem; color: var(--muted); }
   #photo-preview { margin-block-start: 1rem; }
-  .photo-image { overflow: hidden; border-radius: 0.55rem; background: var(--background); }
+  .photo-image { border-radius: 0.55rem; background: var(--background); }
   .photo-image :global(img) {
     display: block;
     width: 100%;
     max-block-size: 24rem;
     object-fit: contain;
   }
+  .original-preview, .compare-photo { border-radius: inherit; overflow: hidden; }
+  .compare-photo:not([hidden]) {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+  }
+  .compare-icon {
+    position: absolute;
+    inset-inline-end: 0.75rem;
+    inset-block-end: 0.75rem;
+    display: grid;
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .compare-photo:is(:hover, :focus-visible) .compare-icon { color: var(--accent); border-color: var(--accent); }
   .photo-feedback { display: flex; align-items: start; gap: 0.7rem; }
-  .photo-feedback:has(#upload-status:not(:empty)) { margin-block-start: 1rem; }
+  .photo-feedback:has(#upload-status:not(:empty, .visually-hidden)) { margin-block-start: 1rem; }
   #upload-status { font-weight: 700; }
   .photo-hint { font-size: 0.875rem; color: var(--muted); }
   .photo-spinner:not([hidden]) {
@@ -347,8 +404,52 @@
   .try-another { padding: 0.65rem 0; background: none; border: 0; color: var(--muted); font-weight: 700; }
   .check-result[aria-disabled="true"] { opacity: 0.6; cursor: wait; }
   .check-result[hidden] { display: none; }
-  .photo-views:not([hidden]) { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .photo-views [aria-pressed="true"] { background: var(--accent); color: #191310; }
+  .photo-comparison-dialog {
+    inline-size: min(76rem, calc(100% - 2rem));
+    max-block-size: calc(100dvh - 2rem);
+    padding: clamp(1rem, 2.5vw, 2rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--rule);
+    border-radius: 0.8rem;
+    background: var(--panel);
+    color: var(--text);
+  }
+  .photo-comparison-dialog::backdrop { background: #030201e8; overflow: hidden; overscroll-behavior: contain; }
+  .photo-comparison-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+  .close-comparison {
+    position: relative;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text);
+  }
+  .close-comparison:hover { color: var(--accent); border-color: var(--accent); }
+  .close-comparison::before, .close-comparison::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: 0.9rem;
+    block-size: 1px;
+    background: currentColor;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  .close-comparison::after { transform: translate(-50%, -50%) rotate(-45deg); }
+  .photo-comparison-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-block-start: 1rem; }
+  .photo-comparison-pair figure { margin: 0; }
+  .photo-comparison-pair figcaption { margin-block-end: 0.4rem; font-size: 0.875rem; font-weight: 700; }
+  .photo-comparison-pair :global(img) {
+    display: block;
+    inline-size: 100%;
+    max-block-size: 65dvh;
+    border-radius: 0.55rem;
+    background: var(--background);
+    object-fit: contain;
+  }
+
+  @media (max-width: 42rem) { .photo-comparison-pair { grid-template-columns: minmax(0, 1fr); } }
 
   @media (pointer: coarse) { .drop-hint { display: none; } }
 </style>
