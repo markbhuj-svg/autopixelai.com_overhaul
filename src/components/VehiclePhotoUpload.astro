@@ -1,11 +1,10 @@
 <section id="image-demo" tabindex="-1" class="upload-panel" aria-labelledby="upload-title">
   <h2 id="upload-title">Vehicle photo</h2>
   <div class="drop-zone">
-    <input class="visually-hidden" id="vehicle-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-formats photo-processing-note upload-status" />
+    <input class="visually-hidden" id="vehicle-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-formats upload-status" />
     <label class="button upload-button" for="vehicle-photo">Choose a photo <span class="arrow" aria-hidden="true"></span></label>
     <p class="drop-hint">or drag and drop it here</p>
     <p id="photo-formats">JPG, PNG or WebP · up to 15 MB</p>
-    <p id="photo-processing-note" hidden>Selected photos are sent to AutoBG for processing.</p>
   </div>
   <div id="photo-preview" hidden>
     <div class="photo-image"></div>
@@ -37,7 +36,6 @@
   const status = document.querySelector('#upload-status')!;
   const indicator = document.querySelector<HTMLProgressElement>('.photo-spinner')!;
   const hint = document.querySelector('.photo-hint')!;
-  const note = document.querySelector<HTMLElement>('#photo-processing-note')!;
   const actions = document.querySelector<HTMLElement>('.photo-actions')!;
   const checkButton = document.querySelector<HTMLButtonElement>('.check-result')!;
   const resetButton = document.querySelector<HTMLButtonElement>('.try-another')!;
@@ -61,11 +59,7 @@
   } as const;
   const config = fetch('/api/demo/config', { signal: AbortSignal.timeout(10000) })
     .then(async (response) => response.ok && (await response.json()).enabled === true)
-    .catch(() => false)
-    .then((enabled) => {
-      note.hidden = !enabled;
-      return enabled;
-    });
+    .catch(() => false);
 
   function closeStream() {
     stream?.close();
@@ -314,7 +308,7 @@
   .drop-zone.is-dragging { background: #271d17; border-color: var(--accent); }
   .upload-button { cursor: pointer; min-block-size: 3rem; }
   #vehicle-photo:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 4px; }
-  #photo-formats, #photo-processing-note { font-size: 0.84rem; color: var(--muted); }
+  #photo-formats { font-size: 0.84rem; color: var(--muted); }
   #photo-preview { margin-block-start: 1rem; }
   .photo-image { overflow: hidden; border-radius: 0.55rem; background: var(--background); }
   .photo-image :global(img) {
