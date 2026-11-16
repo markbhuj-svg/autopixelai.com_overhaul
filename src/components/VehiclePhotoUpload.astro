@@ -1,5 +1,5 @@
 <section id="image-demo" tabindex="-1" class="upload-panel" aria-labelledby="upload-title">
-  <h2 id="upload-title">Vehicle photo</h2>
+  <h2 id="upload-title" class="visually-hidden">Vehicle photo</h2>
   <div class="drop-zone">
     <input class="visually-hidden" id="vehicle-photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-formats upload-status" />
     <label class="button upload-button" for="vehicle-photo">Choose a photo <span class="arrow" aria-hidden="true"></span></label>
@@ -7,14 +7,9 @@
     <p id="photo-formats">JPG, PNG or WebP · up to 15 MB</p>
   </div>
   <div id="photo-preview" hidden>
-    <div class="photo-image">
-      <div class="original-preview"></div>
-      <button class="compare-photo" type="button" aria-label="Compare before and after" aria-haspopup="dialog" aria-controls="vehicle-photo-comparison" hidden>
-        <span class="compare-preview"></span>
-        <span class="compare-icon" aria-hidden="true"><span class="arrow"></span></span>
-      </button>
-    </div>
+    <div class="photo-image"></div>
   </div>
+  <button class="button compare-photo" type="button" aria-label="Compare before and after" aria-haspopup="dialog" aria-controls="vehicle-photo-comparison" hidden>Compare <span class="arrow" aria-hidden="true"></span></button>
   <div class="photo-feedback">
     <progress class="photo-spinner" aria-label="Photo processing" hidden></progress>
     <div>
@@ -46,9 +41,8 @@
   const input = document.querySelector<HTMLInputElement>('#vehicle-photo')!;
   const dropZone = document.querySelector<HTMLElement>('.drop-zone')!;
   const preview = document.querySelector<HTMLElement>('#photo-preview')!;
-  const imageSlot = document.querySelector('.original-preview')!;
+  const imageSlot = document.querySelector('.photo-image')!;
   const compareButton = document.querySelector<HTMLButtonElement>('.compare-photo')!;
-  const comparePreview = compareButton.querySelector('.compare-preview')!;
   const comparison = document.querySelector<HTMLDialogElement>('#vehicle-photo-comparison')!;
   const originalComparison = comparison.querySelector('.comparison-original')!;
   const finishedComparison = comparison.querySelector('.comparison-finished')!;
@@ -88,7 +82,6 @@
     if (current) URL.revokeObjectURL(current.original.src);
     current = undefined;
     imageSlot.replaceChildren();
-    comparePreview.replaceChildren();
     originalComparison.replaceChildren();
     finishedComparison.replaceChildren();
     compareButton.hidden = true;
@@ -206,11 +199,11 @@
     if (current !== photo) return;
     originalComparison.replaceChildren(photo.original);
     finishedComparison.replaceChildren(finished.cloneNode());
-    comparePreview.replaceChildren(finished);
+    imageSlot.replaceChildren(finished);
     compareButton.hidden = false;
     const restoreFocus = actions.contains(document.activeElement);
     actions.hidden = true;
-    showStatus('Open the finished photo to compare it with the original.', true);
+    showStatus('Finished photo available. Select Compare to view it alongside the original.', true);
     if (restoreFocus) compareButton.focus({ preventScroll: true });
   }
 
@@ -325,7 +318,6 @@
   .drop-zone {
     position: relative;
     min-block-size: 13rem;
-    margin-block-start: 1.2rem;
     padding: 1.7rem 0.85rem;
     display: grid;
     place-items: center;
@@ -342,38 +334,19 @@
   .upload-button { cursor: pointer; min-block-size: 3rem; }
   #vehicle-photo:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 4px; }
   #photo-formats { font-size: 0.84rem; color: var(--muted); }
-  #photo-preview { margin-block-start: 1rem; }
-  .photo-image { border-radius: 0.55rem; background: var(--background); }
+  .upload-panel:has(.compare-photo:not([hidden])) { padding: 0; overflow: hidden; border-radius: 0.55rem; }
+  .photo-image { overflow: hidden; border-radius: 0.55rem; }
+  .upload-panel:has(.compare-photo:not([hidden])) .photo-image { border-radius: 0; }
   .photo-image :global(img) {
     display: block;
-    width: 100%;
-    max-block-size: 24rem;
-    object-fit: contain;
-  }
-  .original-preview, .compare-photo { border-radius: inherit; overflow: hidden; }
-  .compare-photo:not([hidden]) {
-    position: relative;
-    display: block;
     inline-size: 100%;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: zoom-in;
+    block-size: auto;
   }
-  .compare-icon {
-    position: absolute;
-    inset-inline-end: 0.75rem;
-    inset-block-end: 0.75rem;
-    display: grid;
-    place-items: center;
-    inline-size: 2.5rem;
-    block-size: 2.5rem;
-    border: 1px solid var(--rule);
-    border-radius: 50%;
-    background: var(--panel);
-    color: var(--text);
+  .compare-photo:not([hidden]) {
+    display: flex;
+    inline-size: fit-content;
+    margin: 0.9rem auto;
   }
-  .compare-photo:is(:hover, :focus-visible) .compare-icon { color: var(--accent); border-color: var(--accent); }
   .photo-feedback { display: flex; align-items: start; gap: 0.7rem; }
   .photo-feedback:has(#upload-status:not(:empty, .visually-hidden)) { margin-block-start: 1rem; }
   #upload-status { font-weight: 700; }
@@ -443,10 +416,8 @@
   .photo-comparison-pair :global(img) {
     display: block;
     inline-size: 100%;
-    max-block-size: 65dvh;
+    block-size: auto;
     border-radius: 0.55rem;
-    background: var(--background);
-    object-fit: contain;
   }
 
   @media (max-width: 42rem) { .photo-comparison-pair { grid-template-columns: minmax(0, 1fr); } }

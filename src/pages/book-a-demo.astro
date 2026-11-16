@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import LeadConfirmation from '../components/LeadConfirmation.astro';
 import PhotoComparison from '../components/PhotoComparison.astro';
 import { companyTypes } from '../lead-options.mjs';
 import { bookingUrl } from '../site';
@@ -76,6 +77,7 @@ const topics = [
       </form>
     </div>
   </section>
+  <LeadConfirmation />
 
   <section class="product-section">
     <div class="wrap product-split prep">

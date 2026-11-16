@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import LeadConfirmation from '../components/LeadConfirmation.astro';
 import PhotoComparison from '../components/PhotoComparison.astro';
 import { companyTypes } from '../lead-options.mjs';
 import { campaignUrl } from '../site';
@@ -78,6 +79,7 @@ const meetingUrl = 'https://calendar.google.com/calendar/u/0/appointments/schedu
       </form>
     </div>
   </section>
+  <LeadConfirmation meetingUrl={meetingUrl} />
 </SiteLayout>
 
 <script>

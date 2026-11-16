@@ -126,6 +126,9 @@ test('every launch route is built, linked, and included in the sitemap', async (
   assert.match(campaign, /<form[^>]*id="black-friday-form"[^>]*action="\/api\/leads"/);
   assert.match(campaign, /name="consent" required/);
   assert.match(campaign, /Get the Black Friday Deal/);
+  assert.match(campaign, /<dialog[^>]*id="lead-confirmation"[^>]*aria-labelledby="lead-confirmation-title"/);
+  assert.match(campaign, /Black Friday\s*<strong[^>]*>request received\./);
+  assert.match(campaign, /Book My Offer Call/);
   assert.match(campaign, /data-comparison-pairs=/);
 });
 
@@ -137,14 +140,19 @@ test('both vehicle uploaders and the demo enquiry have on-page controls', async 
   for (const page of [home, photo]) {
     assert.match(page, /<input[^>]*type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/);
     assert.match(page, /id="photo-preview"/);
+    assert.match(page, /id="upload-title" class="visually-hidden"/);
     assert.match(page, /<progress[^>]*aria-label="Photo processing"/);
     assert.match(page, /<button[^>]*aria-label="Compare before and after"[^>]*aria-haspopup="dialog"/);
+    assert.match(page, /aria-controls="vehicle-photo-comparison" hidden[^>]*>Compare\b/);
     assert.match(page, /<dialog[^>]*id="vehicle-photo-comparison"[^>]*aria-labelledby="photo-comparison-title"/);
     assert.doesNotMatch(page, /data-photo-view|data-process-label|id="photo-filename"|>Remove photo<|>Try another photo<|Photo preview ready\./);
   }
   assert.match(demo, /<form[^>]*id="demo-form"/);
   assert.match(demo, /id="demo-email"[^>]*type="email"[^>]*required/);
   assert.match(demo, /Request My Inventory Demo/);
+  assert.match(demo, /<dialog[^>]*id="lead-confirmation"[^>]*aria-labelledby="lead-confirmation-title"/);
+  assert.match(demo, /Inventory demo\s*<strong[^>]*>requested\./);
+  assert.match(demo, /data-lead-reference/);
   assert.doesNotMatch(photo, /https:\/\/www\.autopixelai\.com\/try-it\//);
   assert.doesNotMatch(demo, /https:\/\/www\.autopixelai\.com\/book-a-demo\//);
 });

@@ -18,11 +18,30 @@ export function bindLeadForm(form: HTMLFormElement, options: {
   const note = form.querySelector<HTMLElement>('[data-lead-note]')!;
   const status = form.querySelector<HTMLElement>('[data-lead-status]')!;
   const challenge = form.querySelector<HTMLElement>('[data-lead-security]')!;
+  const confirmation = document.querySelector<HTMLDialogElement>('#lead-confirmation')!;
+  const confirmationReference = confirmation.querySelector('[data-lead-reference]')!;
   const localPreview = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   let token = '';
   let widget: string | undefined;
   let pending = false;
   let reference: string | undefined;
+
+  confirmation.addEventListener('close', () => {
+    (submit.disabled ? form.querySelector<HTMLElement>('input[required]') : submit)?.focus({ preventScroll: true });
+  });
+  if (!('closedBy' in confirmation)) {
+    let startedOutside = false;
+    confirmation.addEventListener('pointerdown', (event) => { startedOutside = event.target === confirmation; });
+    confirmation.addEventListener('click', (event) => {
+      if (startedOutside && event.target === confirmation) {
+        const box = confirmation.getBoundingClientRect();
+        if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) {
+          confirmation.close();
+        }
+      }
+      startedOutside = false;
+    });
+  }
 
   form.addEventListener('input', () => {
     if (!pending) {
@@ -74,7 +93,15 @@ export function bindLeadForm(form: HTMLFormElement, options: {
       if (result.status === 202) {
         form.reset();
         reference = undefined;
-        status.textContent = `We received your enquiry. Reference ${leadId.slice(0, 8)}.`;
+        const acceptedReference = typeof response.reference === 'string' ? response.reference : leadId;
+        const shortReference = acceptedReference.slice(0, 8);
+        if (typeof confirmation.showModal === 'function') {
+          status.textContent = '';
+          confirmationReference.textContent = shortReference;
+          confirmation.showModal();
+        } else {
+          status.textContent = `Your request is in. We’ll follow up by email. Reference ${shortReference}.`;
+        }
       } else {
         status.textContent = response.message || 'Submission failed. Please try again.';
       }

@@ -13,7 +13,7 @@ The homepage hero uses a dealership poster until a video is available. Put the f
 
 The product pages use samples from the live [AutoPixelAI asset library](https://www.autopixelai.com/). The local showroom gallery has 12 examples, category links, and an enlarged preview.
 
-The homepage and Try a Photo send a selected vehicle photo to AutoBG and show its progress while it processes. Visitors can open the finished photo to compare it with the original. To use the processor locally, run `npm run build` then `node --env-file=.env server/index.mjs` with the AutoBG settings in `.env`. The Astro dev server supports the local preview.
+The homepage and Try a Photo send a selected vehicle photo to AutoBG and show its progress while it processes. **Compare** opens the finished photo alongside the original. To use the processor locally, run `npm run build` then `node --env-file=.env server/index.mjs` with the AutoBG settings in `.env`. The Astro dev server supports the local preview.
 
 The demo and Black Friday forms use local previews on loopback addresses. On the hosted site, both use the same-origin lead endpoint and require a verified Turnstile response before sending an email to `team@autopixelai.com`.
 
