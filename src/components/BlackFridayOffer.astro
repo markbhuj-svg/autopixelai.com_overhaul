@@ -14,7 +14,7 @@ import { campaignUrl } from '../site';
     </div>
   </div>
   <form class="offer-dismiss" method="dialog">
-    <button type="submit" aria-label="Close Black Friday offer" autofocus></button>
+    <button type="submit" aria-label="Close Black Friday offer" autofocus><span aria-hidden="true"></span></button>
   </form>
 </dialog>
 
@@ -38,30 +38,26 @@ import { campaignUrl } from '../site';
 
   dialog.querySelector('.offer-claim')?.addEventListener('click', () => dialog.close());
 
-  if (!('closedBy' in dialog)) {
-    let startedOutside = false;
-    const onBackdrop = (event: MouseEvent) => {
-      const bounds = dialog.getBoundingClientRect();
-      return event.target === dialog && (event.clientX < bounds.left || event.clientX >= bounds.right
-        || event.clientY < bounds.top || event.clientY >= bounds.bottom);
-    };
-    dialog.addEventListener('pointerdown', (event) => { startedOutside = onBackdrop(event); });
-    dialog.addEventListener('click', (event) => {
-      if (startedOutside && onBackdrop(event)) dialog.close();
-      startedOutside = false;
-    });
-  }
+  let startedOutside = false;
+  dialog.addEventListener('pointerdown', (event) => { startedOutside = event.target === dialog; });
+  dialog.addEventListener('click', (event) => {
+    if (startedOutside && event.target === dialog && dialog.open) dialog.close();
+    startedOutside = false;
+  });
 </script>
 
 <style>
   dialog {
-    inline-size: min(61rem, calc(100% - 2rem));
-    max-block-size: calc(100dvh - 2rem);
-    padding: 0;
-    border: 1px solid #695041;
-    border-radius: 1rem;
+    --close-size: 2.75rem;
+    --close-inset: 0.375rem;
+    --close-space: calc(var(--close-size) / 2 + var(--close-inset));
+    inline-size: min(64.5rem, calc(100% - 1rem));
+    max-block-size: calc(100dvh - 1rem);
+    padding: var(--close-space);
+    border: 0;
+    overflow: hidden;
     color: var(--text);
-    background: #1b1410;
+    background: transparent;
   }
 
   dialog:modal { overscroll-behavior: contain; }
@@ -74,28 +70,32 @@ import { campaignUrl } from '../site';
 
   .offer-layout {
     display: grid;
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-    position: relative;
+    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+    max-block-size: calc(100dvh - 1rem - 2 * var(--close-space));
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid #695041;
+    border-radius: 1rem;
     background: radial-gradient(ellipse at 13% 0%, #40271c, transparent 78%), #1b1410;
   }
 
   .offer-copy {
     position: relative;
     grid-area: 1 / 1;
-    padding: clamp(1.5rem, 3.4vw, 3rem);
+    padding: clamp(1rem, 1.8vw, 2.25rem) clamp(1.25rem, 2.5vw, 2.25rem);
     align-self: center;
   }
 
   .offer-copy :global(.site-logo) { inline-size: 8rem; }
   .offer-copy h2 {
-    margin-block: 1.5rem 1.15rem;
-    font: 700 clamp(3rem, 1.8rem + 3vw, 4.6rem)/0.94 var(--display);
+    margin-block: 1rem 0.75rem;
+    font: 700 clamp(2.5rem, 5.2vw, 4.1rem)/0.94 var(--display);
     letter-spacing: -0.027em;
   }
 
   .offer-copy strong { display: block; color: var(--accent); font-weight: inherit; }
   .offer-copy p { max-inline-size: 34ch; color: #e5cfc1; }
-  .offer-claim { margin-block-start: 1.65rem; }
+  .offer-claim { margin-block-start: 1.25rem; }
 
   .offer-image {
     grid-area: 1 / 2;
@@ -105,31 +105,44 @@ import { campaignUrl } from '../site';
     object-fit: contain;
   }
 
-  .offer-dismiss { position: absolute; inset-block-start: 0.65rem; inset-inline-end: 0.65rem; }
+  .offer-dismiss { position: absolute; inset-block-start: var(--close-inset); inset-inline-end: var(--close-inset); }
   .offer-dismiss button {
+    display: grid;
+    place-items: center;
+    inline-size: var(--close-size);
+    block-size: var(--close-size);
+    padding: 0;
+    border: 0;
+    color: var(--text);
+    background: transparent;
+  }
+
+  .offer-dismiss button span {
     position: relative;
-    inline-size: 2.75rem;
-    block-size: 2.75rem;
+    inline-size: 50%;
+    block-size: 50%;
     border: 1px solid #e8c0a777;
     border-radius: 50%;
-    color: var(--text);
     background: #17110ff5;
   }
 
-  .offer-dismiss button::before, .offer-dismiss button::after {
+  .offer-dismiss button span::before, .offer-dismiss button span::after {
     content: '';
     position: absolute;
     inset: 50% auto auto 50%;
-    inline-size: 0.95rem;
+    inline-size: 0.6rem;
     block-size: 1px;
     background: currentColor;
     transform: translate(-50%, -50%) rotate(45deg);
   }
 
-  .offer-dismiss button::after { transform: translate(-50%, -50%) rotate(-45deg); }
-  .offer-dismiss button:hover { border-color: var(--accent); color: var(--accent); }
+  .offer-dismiss button span::after { transform: translate(-50%, -50%) rotate(-45deg); }
+  .offer-dismiss button:hover span { border-color: var(--accent); color: var(--accent); }
+  .offer-dismiss button:focus-visible { outline: none; }
+  .offer-dismiss button:focus-visible span { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-  @media (max-width: 42rem) {
+  @media (max-width: 55rem) {
+    dialog { inline-size: min(34rem, calc(100% - 1rem)); }
     .offer-layout { grid-template-columns: minmax(0, 1fr); }
     .offer-image { grid-area: 1 / 1; }
     .offer-copy { grid-area: 2 / 1; padding: 1.15rem clamp(1.15rem, 5vw, 2rem) 1.45rem; }

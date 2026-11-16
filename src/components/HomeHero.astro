@@ -1,7 +1,7 @@
 ---
 import { existsSync } from 'node:fs';
 import '@fontsource-variable/instrument-sans/wght-italic.css';
-import { bookingUrl } from '../site';
+import { bookingUrl, campaignUrl } from '../site';
 
 const videoPath = '/media/hero.mp4';
 const hasVideo = existsSync(`public${videoPath}`);
@@ -38,7 +38,10 @@ const hasVideo = existsSync(`public${videoPath}`);
       </span>
     </h1>
     <p>Guided capture and AI showroom backgrounds for your inventory.</p>
-    <a class="button hero-cta" href={bookingUrl}>Book a demo</a>
+    <div class="hero-actions">
+      <a class="button hero-cta" href={bookingUrl}>Book a demo</a>
+      <a class="button" href={`${campaignUrl}#offer-form`}>Get Black Friday Deal</a>
+    </div>
   </div>
 </section>
 
@@ -179,11 +182,21 @@ const hasVideo = existsSync(`public${videoPath}`);
     text-wrap: balance;
   }
 
-  .hero-cta {
+  .hero-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .hero-actions .button {
     min-block-size: 3rem;
     padding-inline: 1.65rem;
-    border-color: #f2c9adad;
     border-radius: 999px;
+  }
+
+  .hero-cta {
+    border-color: #f2c9adad;
     color: var(--text);
     background: #171312bf;
   }

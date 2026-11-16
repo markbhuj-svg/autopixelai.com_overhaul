@@ -1,18 +1,20 @@
 ---
 import SiteLogo from './SiteLogo.astro';
-import { bookingUrl, signInUrl, siteLinks } from '../site';
+import { bookingUrl, campaignUrl, signInUrl, siteLinks } from '../site';
 
 const { currentPath } = Astro.props;
+const navLinks = [...siteLinks, { href: campaignUrl, label: 'Black Friday' }];
 ---
 <div class="site-header-slot">
   <header class="site-header">
     <div class="site-header-inner wrap">
       <SiteLogo />
       <nav class="desktop-nav" aria-label="Main navigation">
-        {siteLinks.map(({ href, label }) => <a href={href} aria-current={currentPath === href ? 'page' : undefined}>{label}</a>)}
+        {navLinks.map(({ href, label }) => <a class:list={{ 'header-offer': href === campaignUrl }} href={href} aria-current={currentPath === href ? 'page' : undefined}>{label}</a>)}
       </nav>
       <div class="header-actions">
         <a class="sign-in" href={signInUrl}>Sign in</a>
+        <a class="header-offer mobile-offer" href={campaignUrl} aria-current={currentPath === campaignUrl ? 'page' : undefined}>Black Friday</a>
         <a class="button button-outline header-book" href={bookingUrl} aria-current={currentPath === bookingUrl ? 'page' : undefined}>
           Book a demo <span class="header-book-icon" aria-hidden="true"><span class="arrow"></span></span>
         </a>
@@ -81,6 +83,12 @@ const { currentPath } = Astro.props;
 
   a[aria-current="page"] { color: var(--text); text-decoration: underline; text-underline-offset: 0.4em; }
 
+  .site-header .header-offer,
+  .site-header[data-floating] .desktop-nav .header-offer {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
   .header-book {
     padding: 0.5rem 1.15rem;
     border-radius: 999px;
@@ -88,12 +96,19 @@ const { currentPath } = Astro.props;
     min-block-size: 2.4rem;
   }
 
-  .header-book-icon, .mobile-nav { display: none; }
+  .header-book-icon, .mobile-nav, .mobile-offer { display: none; }
 
   @media (max-width: 65rem) {
     .desktop-nav, .sign-in { display: none; }
     .header-actions { margin-inline-start: auto; }
     .mobile-nav { display: block; }
+    .mobile-offer {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: 2.75rem;
+      padding-inline: 0.35rem;
+      white-space: nowrap;
+    }
 
     .mobile-nav summary {
       min-block-size: 2.75rem;
@@ -136,16 +151,12 @@ const { currentPath } = Astro.props;
     .mobile-nav nav a { padding: 0.75rem 0; }
   }
 
-  @media (max-width: 33rem) {
-    .header-actions { display: none; }
-  }
-
   .site-header[data-floating] {
     position: fixed;
     z-index: 10;
     inset-block-end: var(--floating-header-bottom);
     inset-inline: 0;
-    inline-size: min(calc(100% - 1.5rem), 54rem);
+    inline-size: min(calc(100% - 1.5rem), 63rem);
     margin-inline: auto;
     border-radius: 999px;
     background: #1d1917;
@@ -252,16 +263,12 @@ const { currentPath } = Astro.props;
     inset-block-end: auto;
   }
 
-  @media (min-width: 56rem) {
-    .site-header[data-floating] .desktop-nav, .site-header[data-floating] .sign-in { display: flex; }
-    .site-header[data-floating] .mobile-nav { display: none; }
-  }
-
   @media (max-width: 38rem) {
+    .site-header-inner { gap: 0.5rem; }
+    .site-header-inner :global(.site-logo) { inline-size: 7rem; }
+    .header-book { display: none; }
     .site-header[data-floating] .site-header-inner { gap: 0.35rem; padding-inline: 0.5rem; }
     .site-header[data-floating] :global(.site-logo) { inline-size: 6.25rem; }
-    .site-header[data-floating] .header-book { padding-inline: 0.65rem; font-size: 0.8rem; }
-    .site-header[data-floating] .header-book-icon { display: none; }
     .site-header[data-floating] .mobile-nav summary { padding-inline: 0.5rem; }
   }
 

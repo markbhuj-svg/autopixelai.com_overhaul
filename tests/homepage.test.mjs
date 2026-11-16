@@ -57,7 +57,7 @@ test('the visualizer serves ten ordered processed views for all vehicle and back
   const { gallery, rooms, angles } = JSON.parse(encoded.replaceAll('&quot;', '"'));
   assert.deepEqual(gallery.map(({ name }) => name), ['BMW 5 Series', 'Chevrolet Tahoe', 'Ford F-150']);
   assert.equal(rooms.length, 3);
-  assert.deepEqual(angles.map(({ file }) => file), [8, 7, 6, 5, 4, 3, 2, 1, 15, 10]);
+  assert.deepEqual(angles.map(({ file }) => file), [8, 7, 6, 5, 4, 3, 1, 2, 15, 10]);
   for (const { sets } of gallery) assert.deepEqual(sets.map((set) => set.length), [10, 10, 10]);
   for (const { sets } of gallery) assert.ok(sets.flat().every(Boolean));
   const photos = gallery.flatMap(({ sets }) => sets.flat()).filter(Boolean);
@@ -120,6 +120,9 @@ test('every launch route is built, linked, and included in the sitemap', async (
   assert.match(home, /<dialog[^>]*id="black-friday-offer"/);
   assert.match(home, /<link rel="icon"[^>]*href="\/favicon\.png"/);
   const campaign = pages.get('/BlackFriday');
+  const nav = campaign.split('aria-label="Main navigation"')[1].split('</nav>')[0];
+  assert.match(nav, /href="\/try-it\/"[^>]*>Try a Photo<\/a>\s*<a class="header-offer" href="\/BlackFriday" aria-current="page"/);
+  assert.match(campaign, /<a class="header-offer mobile-offer" href="\/BlackFriday" aria-current="page"/);
   assert.match(campaign, /<form[^>]*id="black-friday-form"[^>]*action="\/api\/leads"/);
   assert.match(campaign, /name="consent" required/);
   assert.match(campaign, /Get the Black Friday Deal/);

@@ -17,14 +17,14 @@ Try a Photo previews the chosen image in the browser. The demo and Black Friday 
 
 ## Render
 
-Connect the `main` branch of `markbhuj-svg/autopixelai.com_overhaul` as a Node **Web Service**, using [render.yaml](render.yaml) or the settings below.
+For the existing Node web service, open **Settings → Build → Source → Edit**, select `markbhuj-svg/autopixelai.com_overhaul` and branch `main`, and leave the root directory blank. Confirm the settings below before submitting the source change, which starts a deploy. For a separate service, use [render.yaml](render.yaml). [Render source settings](https://render.com/changelog/change-your-services-backing-repo-or-image-in-the-render-dashboard)
 
 - Build command `npm ci && npm test`
 - Start command `npm start`
 - Health check `/healthz`
-- Node version `24.15.0`
+- Node version `24.15.0` from `.node-version`. An existing `NODE_VERSION` setting overrides it. [Render Node version precedence](https://render.com/docs/node-version)
 - An SMTP-capable instance such as Starter. [Render's SMTP port policy](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports)
 
-Set `GOOGLE_SMTP_USER`, `GOOGLE_SMTP_APP_PASSWORD`, `TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY` in Render. Use the existing service's values or compatible credentials. Add the hostname serving the form to the Turnstile widget's allowed hostnames. The endpoint records the time of campaign enquiries and returns a reference after Gmail accepts the message. When credentials are absent, the site remains available and the forms offer the contact email.
+Keep the existing `GOOGLE_SMTP_USER`, `GOOGLE_SMTP_APP_PASSWORD`, `TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY` values in Render. Add any missing values and allow any new deployment hostname in Turnstile. The endpoint records the time of campaign enquiries and returns a reference after Gmail accepts the message. When credentials are absent, the site remains available and the forms offer the contact email.
 
 For a staged service, set `NOINDEX=true`. Verify the health endpoint, the enabled lead configuration, and receipt of an authorized test enquiry before switching the live domain. The existing service can continue serving the current website while the overhaul is reviewed.

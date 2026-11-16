@@ -62,7 +62,7 @@ const timelines = steps.flatMap(({ frames }) => frames.map(({ id }) => `--${id}`
         </ol>
         <div class="workflow-stage" aria-hidden="true">
           {steps.map(({ frames }) => frames.map((frame) => (
-            <img class="stage-frame" data-frame={frame.id} style={{ '--frame-timeline': `--${frame.id}` }} src={framePath(frame.id)} width={frame.width} height={frame.height} loading="lazy" decoding="async" alt="" />
+            <img class="stage-frame" data-frame={frame.id} style={{ '--frame-timeline': `--${frame.id}`, '--image-ratio': frame.width / frame.height }} src={framePath(frame.id)} width={frame.width} height={frame.height} loading="lazy" decoding="async" alt="" />
           )))}
         </div>
       </div>
@@ -87,7 +87,8 @@ const timelines = steps.flatMap(({ frames }) => frames.map(({ id }) => `--${id}`
 
   .photo-hero h1 { font-size: clamp(3.3rem, 1.8rem + 4.8vw, 6.5rem); }
   .photo-hero em { color: var(--accent); font-style: normal; }
-  .photo-hero-image { width: 100%; height: auto; border-radius: 0.65rem; }
+  .photo-hero-image { width: 100%; height: auto; }
+  .photo-hero-image, .workflow-inline, .stage-frame { border-radius: 0.65rem; }
   .photo-hero .text-link, .step-copy .text-link { color: var(--accent); }
 
   .workflow {
@@ -177,7 +178,6 @@ const timelines = steps.flatMap(({ frames }) => frames.map(({ id }) => `--${id}`
     aspect-ratio: var(--image-ratio);
     object-fit: contain;
     margin-inline: auto;
-    border-radius: 0.4rem;
   }
 
   .workflow-stage { display: none; }
@@ -312,19 +312,19 @@ const timelines = steps.flatMap(({ frames }) => frames.map(({ id }) => `--${id}`
       }
 
       .workflow-stage {
+        --stage-height: min(calc(100svh - var(--workflow-inset) - var(--floating-header-clearance)), 44rem);
         display: grid;
         place-items: center;
         position: sticky;
         inset-block-start: var(--workflow-inset);
-        block-size: min(calc(100svh - var(--workflow-inset) - var(--floating-header-clearance)), 44rem);
+        block-size: var(--stage-height);
       }
 
       .stage-frame {
         grid-area: 1 / 1;
-        width: 100%;
-        height: 100%;
-        min-block-size: 0;
-        object-fit: contain;
+        inline-size: min(100%, calc(var(--stage-height) * var(--image-ratio)));
+        block-size: auto;
+        aspect-ratio: var(--image-ratio);
         animation: show-frame auto steps(1, end) both, hide-frame auto steps(1, end) forwards, ease-frame-change auto ease-in-out both;
         animation-timeline: var(--frame-timeline), var(--frame-timeline), var(--frame-timeline);
         animation-range: entry, exit, cover;
