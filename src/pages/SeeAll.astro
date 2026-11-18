@@ -1,0 +1,105 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import catalog from '../data/client-showrooms.json';
+import '../styles/product.css';
+---
+<SiteLayout title="Showroom Theme Options" description="Browse the complete AutoPixelAI showroom background collection." path="/SeeAll" noindex>
+  <section class="product-section">
+    <div class="wrap">
+      <div class="theme-intro">
+        <h1>Choose your showroom background.</h1>
+        <p class="product-lead">Explore {catalog.slides.length} options. Open a preview to see it in detail, then send your preferred theme number to your AutoPixelAI contact.</p>
+        <p>We also create custom backgrounds around your dealership’s identity.</p>
+      </div>
+      <ol class="theme-gallery" aria-label="Showroom backgrounds" role="list">
+        {catalog.slides.map((slide, index) => (
+          <li id={`theme-${index + 1}`}>
+            <a class="theme-preview" href={slide.image} aria-label={`Preview ${slide.label}`}>
+              <img src={slide.thumbnail} srcset={`${slide.thumbnail} ${slide.thumbnailWidth}w, ${slide.image} ${slide.width}w`}
+                sizes="(max-width: 40rem) calc(100vw - 2.5rem), (max-width: 64rem) 45vw, 30vw"
+                width={slide.width} height={slide.height} alt={`Showroom background option, ${slide.label}`}
+                fetchpriority={index === 0 ? 'high' : undefined} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+              <h2>{slide.label}</h2>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+  <dialog id="theme-preview" closedby="any" aria-labelledby="theme-preview-title">
+    <header class="preview-heading">
+      <h2 id="theme-preview-title">Background preview</h2>
+      <form method="dialog"><button class="button button-outline" aria-label="Close background preview" autofocus>Close</button></form>
+    </header>
+    <p role="status" data-preview-status></p>
+    <div class="preview-image"></div>
+  </dialog>
+</SiteLayout>
+
+<script>
+  const gallery = document.querySelector('.theme-gallery')!;
+  const dialog = document.querySelector<HTMLDialogElement>('#theme-preview')!;
+  const heading = dialog.querySelector('#theme-preview-title')!;
+  const status = dialog.querySelector('[data-preview-status]')!;
+  const slot = dialog.querySelector('.preview-image')!;
+  let opener: HTMLAnchorElement | undefined;
+  let pending = 0;
+
+  gallery.addEventListener('click', async (event) => {
+    const click = event as MouseEvent;
+    const link = (click.target as Element).closest<HTMLAnchorElement>('a.theme-preview');
+    if (!link || click.button !== 0 || click.ctrlKey || click.metaKey || click.shiftKey || click.altKey || !dialog.showModal) return;
+    click.preventDefault();
+    opener = link;
+    const request = ++pending;
+    heading.textContent = link.querySelector('h2')!.textContent;
+    status.textContent = 'Loading preview…';
+    slot.replaceChildren();
+    dialog.showModal();
+    const image = new Image();
+    image.alt = `Showroom background option, ${heading.textContent}`;
+    image.src = link.href;
+    try {
+      await image.decode();
+      if (request !== pending || !dialog.open) return;
+      slot.replaceChildren(image);
+      status.textContent = '';
+    } catch {
+      if (request === pending && dialog.open) status.textContent = 'This preview could not load. Close it and try again.';
+    }
+  });
+  dialog.addEventListener('close', () => {
+    pending++;
+    slot.replaceChildren();
+    status.textContent = '';
+    opener?.focus({ preventScroll: true });
+  });
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    let startedOutside = false;
+    dialog.addEventListener('pointerdown', (event) => { startedOutside = event.target === dialog; });
+    dialog.addEventListener('click', (event) => {
+      const box = dialog.getBoundingClientRect();
+      if (startedOutside && event.target === dialog &&
+          (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) dialog.close();
+      startedOutside = false;
+    });
+  }
+</script>
+
+<style>
+  .theme-intro h1 { max-inline-size: 20ch; font: 700 clamp(2.8rem, 5vw, 5rem)/0.98 var(--display); letter-spacing: -0.025em; }
+  .theme-intro p { max-inline-size: 65ch; color: var(--muted); }
+  .theme-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 1.4rem; list-style: none; padding: 0; margin: 2.5rem 0 0; }
+  .theme-preview { display: block; }
+  .theme-preview img { inline-size: 100%; block-size: auto; border-radius: 0.55rem; }
+  .theme-preview h2 { font: 700 1rem/1.4 var(--body); margin-block-start: 0.65rem; }
+  .theme-preview:hover h2 { color: var(--accent); }
+  dialog { inline-size: min(75rem, calc(100% - 2rem)); max-block-size: calc(100dvh - 2rem); padding: 1rem; border: 1px solid var(--rule); border-radius: 0.75rem; background: var(--panel); color: var(--text); overflow: auto; overscroll-behavior: contain; }
+  dialog::backdrop { background: #000d; overflow: hidden; overscroll-behavior: contain; }
+  .preview-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-block-end: 1rem; }
+  .preview-heading h2 { font-size: 1.4rem; }
+  [data-preview-status]:empty { display: none; }
+  .preview-image :global(img) { inline-size: 100%; max-block-size: 78dvh; object-fit: contain; }
+  @media (max-width: 64rem) { .theme-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 40rem) { .theme-gallery { grid-template-columns: minmax(0, 1fr); } }
+</style>

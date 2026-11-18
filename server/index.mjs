@@ -14,6 +14,23 @@ app.use((_req, res, next) => {
   if (process.env.NOINDEX === 'true') res.set('X-Robots-Tag', 'noindex, nofollow');
   next();
 });
+app.use((req, res, next) => {
+  let path;
+  try { path = decodeURIComponent(req.path).replace(/\/+/g, '/').toLowerCase(); }
+  catch { return res.sendStatus(400); }
+  if (/^\/(?:seeall|viewall)(?:\.html)?(?:\/|$)/.test(path) ||
+      /^\/inventory(?:\/|$)/.test(path) ||
+      /^\/assets\/client-(?:showrooms|comparison)\//.test(path)) {
+    res.set('X-Robots-Tag', 'noindex, nofollow, noimageindex');
+  }
+  const gallery = /^\/(seeall|viewall)(?:\.html)?\/?$/.exec(path);
+  if (gallery && ['GET', 'HEAD'].includes(req.method)) {
+    const canonical = gallery[1] === 'seeall' ? '/SeeAll' : '/ViewAll';
+    if (req.path !== canonical) return res.redirect(301, canonical + req.url.slice(req.path.length));
+    return res.sendFile(canonical.slice(1) + '/index.html', { root: dist });
+  }
+  next();
+});
 
 const leads = createLeadRoutes();
 const demo = createDemoHandler();

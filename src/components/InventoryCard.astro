@@ -1,0 +1,21 @@
+---
+import type inventory from '../data/inventory.json';
+interface Props { vehicle: (typeof inventory)[number]; listing?: boolean; eager?: boolean }
+const { vehicle, listing = false, eager = false } = Astro.props;
+const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+const Heading = listing ? 'h2' : 'h3';
+const specs = [['Engine', vehicle.engine], ['Fuel', vehicle.fuel], ['Transmission', vehicle.trans.replace('Continuously Variable Transmission (CVT)', 'CVT')]].filter(([, value]) => value);
+---
+<a class="vehicle-link" href={`/inventory/${vehicle.id}/`} aria-label={`View ${title} ${vehicle.trim}`}
+  data-vehicle={listing ? '' : undefined} data-make={vehicle.make} data-body={vehicle.body} data-year={vehicle.year}
+  data-search={[title, vehicle.trim, vehicle.body, vehicle.drive, vehicle.fuel, vehicle.engine, vehicle.trans].join(' ').toLowerCase()}>
+  <article class="vehicle-card">
+    <img class="card-photo" src={vehicle.photos[0]} alt={`${title} in a virtual showroom`} width="1200" height="800"
+      loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" referrerpolicy="no-referrer" />
+    <Heading>{title}</Heading>
+    <p class="card-trim">{vehicle.trim || 'Vehicle profile'}</p>
+    <ul class="facts" aria-label="Key details">{[vehicle.body, vehicle.drive].filter(Boolean).map((field) => <li>{field}</li>)}</ul>
+    <dl class="card-specs">{specs.map(([name, value]) => <div><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+    <p class="card-action">View details <span class="arrow" aria-hidden="true"></span></p>
+  </article>
+</a>

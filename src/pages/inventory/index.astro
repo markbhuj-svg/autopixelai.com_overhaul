@@ -1,0 +1,37 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import InventoryCard from '../../components/InventoryCard.astro';
+import vehicles from '../../data/inventory.json';
+import '../../styles/inventory.css';
+const makes = [...new Set(vehicles.map((vehicle) => vehicle.make))].sort();
+const bodies = [...new Set(vehicles.map((vehicle) => vehicle.body).filter(Boolean))].sort();
+---
+<SiteLayout title="Browse Vehicles" description="Explore sample vehicle profiles and full AutoPixelAI photo sets." path="/inventory/" noindex>
+  <section class="wrap inventory" aria-labelledby="inventory-title">
+    <div class="inventory-layout">
+      <details class="filters" hidden data-filters>
+        <summary>Filters</summary>
+        <div class="filter-fields">
+          <label for="vehicle-search">Search vehicles</label><input id="vehicle-search" type="search" placeholder="e.g. Jeep" />
+          <label for="vehicle-make">Make</label><select id="vehicle-make"><option value="">All makes</option>{makes.map((make) => <option>{make}</option>)}</select>
+          <label for="vehicle-body">Body style</label><select id="vehicle-body"><option value="">All body styles</option>{bodies.map((body) => <option>{body}</option>)}</select>
+          <button class="reset" type="button" data-reset>Clear filters</button>
+        </div>
+      </details>
+      <div class="results">
+        <header class="results-header">
+          <div><h1 id="inventory-title">Browse vehicles.</h1><p id="result-count" role="status">{vehicles.length} vehicles</p></div>
+          <label class="sort" hidden data-sort>Sort by <select id="vehicle-sort"><option value="default">Featured</option><option value="desc">Newest year</option><option value="asc">Oldest year</option></select></label>
+        </header>
+        <div class="vehicle-grid" data-grid>{vehicles.map((vehicle, index) => <InventoryCard vehicle={vehicle} listing eager={index === 0} />)}</div>
+        <p class="empty-state" data-empty hidden>No vehicles match those filters. Try another search or clear your filters.</p>
+      </div>
+    </div>
+    <section class="inventory-cta">
+      <div><h2>Different photos. One showroom look.</h2><p>Give photos taken on different days or in different locations the same clean background.</p></div>
+      <a class="button" href="/book-a-demo/">Book a photo editing demo <span class="arrow" aria-hidden="true"></span></a>
+    </section>
+    <p class="inventory-note">Sample inventory for demonstration. Not a live sales listing.</p>
+  </section>
+</SiteLayout>
+<script>import '../../inventory.js';</script>

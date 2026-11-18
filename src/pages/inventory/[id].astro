@@ -1,0 +1,63 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import InventoryCard from '../../components/InventoryCard.astro';
+import vehicles from '../../data/inventory.json';
+import '../../styles/inventory.css';
+
+export function getStaticPaths() {
+  return vehicles.map((vehicle, index) => ({ params: { id: vehicle.id }, props: {
+    vehicle, others: [1, 2, 3].map((offset) => vehicles[(index + offset) % vehicles.length]),
+  } }));
+}
+const { vehicle, others } = Astro.props;
+const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+const facts = [['Model year', vehicle.year], ['Make', vehicle.make], ['Trim', vehicle.trim], ['Body style', vehicle.body],
+  ['Drivetrain', vehicle.drive], ['Fuel type', vehicle.fuel], ['Engine', vehicle.engine], ['Transmission', vehicle.trans], ['Doors', vehicle.doors]];
+---
+<SiteLayout title={title} description={`Explore the ${title} and its complete vehicle photo set.`} path={`/inventory/${vehicle.id}/`} noindex>
+  <section class="wrap vehicle-page">
+    <nav class="breadcrumb" aria-label="Inventory navigation"><a href="/inventory/">All inventory</a></nav>
+    <div class="detail-grid">
+      <section class="gallery" aria-label="Vehicle photos" data-gallery>
+        <div class="gallery-frame">
+          <img class="gallery-image" src={vehicle.photos[0]} alt={`${title}, photo 1 of ${vehicle.photos.length}`} width="1440" height="1080" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" />
+          <button class="gallery-open" type="button" data-gallery-open aria-haspopup="dialog" aria-controls="vehicle-photo-gallery" hidden><span>View gallery</span></button>
+          <button class="gallery-arrow previous" type="button" aria-label="Previous photo" data-previous hidden><span class="gallery-chevron" aria-hidden="true"></span></button>
+          <button class="gallery-arrow next" type="button" aria-label="Next photo" data-next hidden><span class="gallery-chevron" aria-hidden="true"></span></button>
+          <span class="photo-count" role="status" data-photo-count>1 / {vehicle.photos.length}</span>
+        </div>
+        <nav class="photo-strip" aria-label="Choose a vehicle photo">
+          {vehicle.photos.map((photo, index) => (
+            <a href={photo} rel="noreferrer" data-photo={index + 1} aria-label={`Photo ${index + 1}`} aria-current={index === 0 ? 'true' : undefined}>
+              <img src={photo} alt="" width="160" height="120" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+              <span>{String(index + 1).padStart(2, '0')}</span>
+            </a>
+          ))}
+        </nav>
+        <dialog class="photo-lightbox" id="vehicle-photo-gallery" closedby="any" aria-label={`${title} photo gallery`}>
+          <div class="lightbox-bar"><span role="status" data-lightbox-count></span><form method="dialog"><button class="button button-outline" autofocus>Close gallery</button></form></div>
+          <div class="lightbox-body"><div class="lightbox-stage">
+            <button class="gallery-arrow previous" type="button" aria-label="Previous photo" data-previous hidden><span class="gallery-chevron" aria-hidden="true"></span></button>
+            <div class="lightbox-photo" data-lightbox-photo></div>
+            <button class="gallery-arrow next" type="button" aria-label="Next photo" data-next hidden><span class="gallery-chevron" aria-hidden="true"></span></button>
+          </div></div>
+        </dialog>
+      </section>
+      <div class="vehicle-info">
+        <header class="vehicle-heading"><h1>{title}</h1>{vehicle.trim && <p>{vehicle.trim}</p>}</header>
+        <section class="spec-sheet" aria-labelledby="spec-title">
+          <h2 id="spec-title">Vehicle overview</h2>
+          <dl>{facts.filter(([, value]) => value).map(([name, value]) => <div><dt>{name}</dt><dd>{value}</dd></div>)}</dl>
+          <p>Manufacturer-decoded specifications. This vehicle is shown as an inventory example.</p>
+        </section>
+        <section class="inventory-cta">
+          <div><h2>Want this look for your photos?</h2><p>See how we replace distracting backgrounds with a consistent showroom setting for your vehicle photos.</p></div>
+          <a class="button" href="/book-a-demo/">Book a photo editing demo <span class="arrow" aria-hidden="true"></span></a>
+        </section>
+      </div>
+    </div>
+    <section class="explore-more" aria-labelledby="explore-title"><h2 id="explore-title">Explore more vehicles.</h2><div class="vehicle-grid">{others.map((other) => <InventoryCard vehicle={other} />)}</div></section>
+    <p class="inventory-note">Sample inventory for demonstration. Not a live sales listing.</p>
+  </section>
+</SiteLayout>
+<script>import '../../inventory.js';</script>

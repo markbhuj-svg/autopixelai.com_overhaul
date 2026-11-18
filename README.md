@@ -13,6 +13,8 @@ The homepage hero uses a dealership poster until a video is available. Put the f
 
 The product pages use samples from the live [AutoPixelAI asset library](https://www.autopixelai.com/). The local showroom gallery has 12 examples, category links, and an enlarged preview.
 
+The original client pages are restored at `/SeeAll` (388 themes), `/ViewAll` (36 photo pairs), and `/inventory/` (ten vehicle profiles with 349 photos). Lowercase gallery URLs and legacy `.html` links redirect to their original paths. These pages and the inventory detail pages carry `noindex, nofollow, noimageindex` in both HTML and HTTP headers and stay outside the sitemap. The client gallery image responses also carry the indexing exclusions. Inventory images retain their original AutoBG CDN URLs.
+
 The homepage and Try a Photo send a selected vehicle photo to AutoBG and show its progress while it processes. **Compare** opens the finished photo alongside the original. To use the processor locally, run `npm run build` then `node --env-file=.env server/index.mjs` with the AutoBG settings in `.env`. The Astro dev server supports the local preview.
 
 The demo and Black Friday forms use local previews on loopback addresses. On the hosted site, both use the same-origin lead endpoint and require a verified Turnstile response before sending an email to `team@autopixelai.com`.

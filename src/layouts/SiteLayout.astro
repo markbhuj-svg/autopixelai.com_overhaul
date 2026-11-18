@@ -8,9 +8,10 @@ interface Props {
   title: string;
   description: string;
   path: string;
+  noindex?: boolean;
 }
 
-const { title, description, path } = Astro.props;
+const { title, description, path, noindex = false } = Astro.props;
 const canonical = new URL(path, Astro.site);
 ---
 <!doctype html>
@@ -21,6 +22,7 @@ const canonical = new URL(path, Astro.site);
     <meta name="theme-color" content="#000000" />
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow, noimageindex" />}
     <link rel="canonical" href={canonical.href} />
     <title>{title} | AutoPixelAI</title>
   </head>

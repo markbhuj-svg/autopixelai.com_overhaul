@@ -6,15 +6,15 @@ test('the homepage renders its visualizer, booking path, and local media', async
   const home = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
 
   const heroTitle = home.match(/<h1[^>]*id="hero-title"[^>]*>(.*?)<\/h1>/s)?.[1] ?? '';
-  assert.match(heroTitle, /AI car photography for dealerships\./);
+  assert.match(heroTitle, /AI Car Photography For Dealerships\./);
   const headlines = heroTitle.split(/<span\b[^>]*\bdata-hero-phrase(?=[\s=>])[^>]*>/).slice(1)
     .map((phrase) => phrase.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
   assert.deepEqual(headlines, [
-    'AI car photography for dealerships.',
-    'Turn lot photos into Studio-Quality Images.',
-    'Every Vehicle Deserves a Showroom-Quality Impression.',
-    'From Camera to Customer-Ready. Faster Than Ever.',
-    'Better Vehicle Photos. Straight to Your Website.',
+    'AI Car Photography For Dealerships.',
+    'Turn Lot Photos Into Studio-Quality Images.',
+    'Every Vehicle Deserves A Showroom-Quality Impression.',
+    'From Camera To Customer-Ready. Faster Than Ever.',
+    'Better Vehicle Photos. Straight To Your Website.',
   ]);
   assert.doesNotMatch(home, /Concept imagery|<button\b[^>]*>\s*Pause/i);
   assert.match(home, /\/media\/showroom-hero\.webp/);
