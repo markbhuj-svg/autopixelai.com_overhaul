@@ -32,7 +32,7 @@ export function enableHomeWorkflow(stage: HTMLElement, motion: MediaQueryList) {
 
     stage.setAttribute('data-scroll-workflow', '');
     const available = parseFloat(getComputedStyle(stage).minHeight);
-    if (!travel() || stage.scrollHeight > Math.ceil(available)) {
+    if (stage.scrollHeight > Math.ceil(available)) {
       stage.removeAttribute('data-scroll-workflow');
       return;
     }

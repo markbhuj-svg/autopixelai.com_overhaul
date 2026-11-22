@@ -103,7 +103,7 @@ const copy = [
   .workflow-progress { display: none; }
 
   @media (prefers-reduced-motion: no-preference) {
-    .workflow-stage[data-scroll-workflow] .workflow-track { display: flex; width: max-content; max-width: none; margin: 0; }
+    .workflow-stage[data-scroll-workflow] .workflow-track { display: flex; width: max-content; max-width: none; }
     .workflow-stage[data-scroll-workflow] li { width: min(38vw, 29.375rem, calc(48svh * 14 / 15)); }
     .workflow-stage[data-scroll-workflow] .workflow-frame { opacity: 0.16; transition: opacity 450ms ease; }
     .workflow-stage[data-scroll-workflow] [aria-current="step"] .workflow-frame { opacity: 1; }
@@ -116,6 +116,14 @@ const copy = [
     .progress-dot[data-current] { background: var(--accent); border-color: var(--accent); }
     .progress-copy { display: flex; justify-content: space-between; gap: 0.6rem; margin-block-start: 0.45rem; color: var(--muted); font-size: 0.75rem; }
     .ready { color: var(--accent); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) and (width > 47.5rem) and (max-height: 54rem) {
+    .workflow-stage[data-scroll-workflow] .workflow-heading { margin-block-end: 0.85rem; }
+    .workflow-stage[data-scroll-workflow] .workflow-heading h2 { font-size: clamp(2.5rem, min(4.5vw, 6svh), 4.25rem); }
+    .workflow-stage[data-scroll-workflow] li { max-inline-size: calc(max(13rem, var(--workflow-height) - 21rem) * 14 / 15); }
+    .workflow-stage[data-scroll-workflow] .workflow-caption h3 { font-size: clamp(1.45rem, min(2.6vw, 6svh - 1rem), 2.375rem); }
+    .workflow-stage[data-scroll-workflow] .workflow-progress { margin-block-start: 0.75rem; }
   }
 
   @media (max-width: 47.5rem) {
