@@ -10,7 +10,11 @@ const { label } = Astro.props;
 </form>
 
 <style>
-  form { position: absolute; inset-block-start: var(--close-inset); inset-inline-end: var(--close-inset); }
+  form {
+    position: absolute;
+    inset-block-start: var(--close-top, var(--close-inset));
+    inset-inline-end: var(--close-inset);
+  }
   button {
     display: grid;
     place-items: center;
