@@ -37,6 +37,14 @@ test('the homepage renders its visualizer, booking path, and local media', async
   const workflowFrames = [...workflow.matchAll(/src="\/media\/photo-app\/([\w-]+)\.webp"/g)].map(([, frame]) => frame);
   assert.deepEqual(workflowFrames, ['scan-vin', 'select-theme', 'capture-front', 'delivered-photos']);
   assert.match(workflow, /href="\/photo-app\//);
+  assert.match(workflow, /Four Steps\./);
+  assert.ok(home.indexOf('id="hero-title"') < home.indexOf('id="visualizer"'));
+  assert.ok(home.indexOf('id="visualizer"') < home.indexOf('id="inventory-preview-title"'));
+  assert.ok(home.indexOf('id="inventory-preview-title"') < home.indexOf('id="workflow"'));
+  assert.ok(home.indexOf('id="workflow"') < home.indexOf('id="showrooms"'));
+  const marquee = home.match(/<section id="showrooms"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
+  assert.match(marquee, /href="\/virtual-showrooms\/#showroom-grid"/);
+  assert.equal([...marquee.matchAll(/<img\b/g)].length, 120);
 
   const fragments = [...home.matchAll(/href="#([\w-]+)"/g)];
   for (const [, fragment] of fragments) {
@@ -48,6 +56,17 @@ test('the homepage renders its visualizer, booking path, and local media', async
   for (const [, source] of sources) {
     await access(new URL(`../dist${source}`, import.meta.url));
   }
+});
+
+test('the public showroom library uses the numbered SeeAll examples', async () => {
+  const catalog = JSON.parse(await readFile(new URL('../src/data/client-showrooms.json', import.meta.url), 'utf8'));
+  const page = await readFile(new URL('../dist/virtual-showrooms/index.html', import.meta.url), 'utf8');
+  const grid = page.match(/<section id="showroom-grid"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
+  const labels = [...grid.matchAll(/<h3[^>]*>(Theme \d+)<\/h3>/g)].map(([, label]) => label);
+  assert.deepEqual(labels, catalog.slides.slice(0, 120).map(({ label }) => label));
+  assert.doesNotMatch(grid, /gallery-filters|data-category|Daylight gallery/);
+  assert.match(grid, /400\+ showroom themes/);
+  assert.match(grid, /href="\/book-a-demo\/\?request=custom-background"/);
 });
 
 test('the visualizer serves ten ordered processed views for all vehicle and background combinations', async () => {

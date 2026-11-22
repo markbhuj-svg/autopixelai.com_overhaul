@@ -87,7 +87,7 @@ const timelines = steps.flatMap(({ frames }) => frames.map(({ id }) => `--${id}`
 
   .photo-hero h1 { font-size: clamp(3.3rem, 1.8rem + 4.8vw, 6.5rem); }
   .photo-hero em { color: var(--accent); font-style: normal; }
-  .photo-hero-image { width: 100%; height: auto; }
+  .photo-hero-image { inline-size: min(100%, calc(68svh * 896 / 1200)); block-size: auto; justify-self: center; }
   .photo-hero-image, .workflow-inline, .stage-frame { border-radius: 0.65rem; }
   .photo-hero .text-link, .step-copy .text-link { color: var(--accent); }
 
