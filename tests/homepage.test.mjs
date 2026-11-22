@@ -63,9 +63,19 @@ test('the homepage renders its visualizer, booking path, and local media', async
 test('the public showroom library uses the numbered SeeAll examples', async () => {
   const catalog = JSON.parse(await readFile(new URL('../src/data/client-showrooms.json', import.meta.url), 'utf8'));
   const page = await readFile(new URL('../dist/virtual-showrooms/index.html', import.meta.url), 'utf8');
+  const themes = catalog.slides.slice(0, 120);
+  const encoded = page.match(/data-showroom-slides="([^"]+)"/)?.[1];
+  assert.ok(encoded);
+  const heroSlides = JSON.parse(encoded.replaceAll('&quot;', '"'));
+  assert.ok(heroSlides.length >= 10 && heroSlides.length <= 20);
+  assert.equal(new Set(heroSlides).size, heroSlides.length);
+  for (const slide of heroSlides) {
+    assert.ok(themes.some(({ image }) => image === slide));
+    await access(new URL(`../dist${slide}`, import.meta.url));
+  }
   const grid = page.match(/<section id="showroom-grid"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
   const labels = [...grid.matchAll(/<h3[^>]*>(Theme \d+)<\/h3>/g)].map(([, label]) => label);
-  assert.deepEqual(labels, catalog.slides.slice(0, 120).map(({ label }) => label));
+  assert.deepEqual(labels, themes.map(({ label }) => label));
   assert.doesNotMatch(grid, /gallery-filters|data-category|Daylight gallery/);
   assert.match(grid, /400\+ showroom themes/);
   assert.match(grid, /href="\/book-a-demo\/\?request=custom-background"/);
