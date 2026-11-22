@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
+const photoFrameSource = /src="(\/_astro\/([\w-]+)\.[\w-]+\.webp)"/g;
+
 test('the homepage renders its visualizer, booking path, and local media', async () => {
   const home = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
 
@@ -34,7 +36,7 @@ test('the homepage renders its visualizer, booking path, and local media', async
   assert.deepEqual(logoRows[0].slice(1, 3), ['TRADER', 'AutoTrader.ca']);
 
   const workflow = home.match(/<section id="workflow"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
-  const workflowFrames = [...workflow.matchAll(/src="\/media\/photo-app\/([\w-]+)\.webp"/g)].map(([, frame]) => frame);
+  const workflowFrames = [...workflow.matchAll(photoFrameSource)].map(([, , frame]) => frame);
   assert.deepEqual(workflowFrames, ['scan-vin', 'select-theme', 'capture-front', 'delivered-photos']);
   assert.match(workflow, /href="\/photo-app\//);
   assert.match(workflow, /Four Steps\./);
@@ -216,8 +218,12 @@ test('the product routes are linked, render canonical URLs, and include their sa
       assert.doesNotMatch(page, /type="range"|<figcaption/);
       const steps = [...page.matchAll(/<li id="(scan-vin|select-theme|capture-images|delivered-results)"/g)].map(([, id]) => id);
       assert.deepEqual(steps, ['scan-vin', 'select-theme', 'capture-images', 'delivered-results']);
-      const frames = [...new Set([...page.matchAll(/src="\/media\/photo-app\/([\w-]+)\.webp"/g)].map(([, frame]) => frame))];
-      assert.deepEqual(frames.sort(), ['capture-front', 'capture-side', 'delivered-photos', 'scan-vin', 'select-theme']);
+      const frames = new Map([...page.matchAll(photoFrameSource)].map(([, source, frame]) => [frame, source]));
+      assert.deepEqual([...frames.keys()].sort(), ['capture-front', 'capture-side', 'delivered-photos', 'scan-vin', 'select-theme']);
+      for (const [frame, source] of frames) {
+        await access(new URL(`../dist${source}`, import.meta.url));
+        if (frame !== 'capture-side') assert.ok(home.includes(`src="${source}"`));
+      }
     }
     for (const [, source] of page.matchAll(/(?:src|href)="(\/media\/[^" ]+)"/g)) {
       await access(new URL(`../dist${source}`, import.meta.url));

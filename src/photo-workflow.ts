@@ -1,3 +1,7 @@
+import type { ImageMetadata } from 'astro';
+
+const images = import.meta.glob<ImageMetadata>('./assets/photo-app/*.webp', { eager: true, import: 'default' });
+
 export const guidedSide = {
   id: 'capture-side', width: 896, height: 1200,
   alt: 'The phone shows a side-profile outline and tire alignment guide over a parked SUV.',
@@ -40,4 +44,4 @@ export const photoWorkflow = [
   },
 ];
 
-export const photoFramePath = (id: string) => `/media/photo-app/${id}.webp`;
+export const photoFramePath = (id: string) => images[`./assets/photo-app/${id}.webp`].src;
