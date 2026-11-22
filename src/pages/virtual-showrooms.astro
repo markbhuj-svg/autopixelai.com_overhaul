@@ -1,4 +1,5 @@
 ---
+import DialogCornerClose from '../components/DialogCornerClose.astro';
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { bookingUrl } from '../site';
 import catalog from '../data/client-showrooms.json';
@@ -48,13 +49,14 @@ const themes = catalog.slides.slice(0, 120);
   </section>
 
   <dialog id="showroom-preview" aria-labelledby="preview-title" closedby="any">
-    <div class="preview-header">
-      <h2 id="preview-title">{themes[0].label}</h2>
-      <form method="dialog">
-        <button class="button button-outline" aria-label="Close showroom preview" autofocus>Close</button>
-      </form>
+    <div class="preview-panel">
+      <img src={themes[0].thumbnail} width={themes[0].width} height={themes[0].height} loading="lazy" alt="" />
+      <div class="preview-caption">
+        <h2 id="preview-title">{themes[0].label}</h2>
+        <a class="button" href={customUrl + '#demo-form'}>Book a demo <span class="arrow" aria-hidden="true"></span></a>
+      </div>
     </div>
-    <img src={themes[0].thumbnail} width={themes[0].width} height={themes[0].height} loading="lazy" alt="" />
+    <DialogCornerClose label="Close showroom preview" />
   </dialog>
 </SiteLayout>
 
@@ -71,6 +73,15 @@ const themes = catalog.slides.slice(0, 120);
         previewTitle.textContent = link.dataset.title ?? '';
         previewImage.src = link.href;
         preview.showModal();
+      });
+    }
+
+    if (!('closedBy' in HTMLDialogElement.prototype)) {
+      let pressedBackdrop = false;
+      preview.addEventListener('pointerdown', (event) => { pressedBackdrop = event.target === preview; });
+      preview.addEventListener('click', (event) => {
+        if (pressedBackdrop && event.target === preview) preview.close();
+        pressedBackdrop = false;
       });
     }
   }
@@ -113,35 +124,41 @@ const themes = catalog.slides.slice(0, 120);
   .gallery-caption h3 { font-size: 1rem; font-weight: 650; }
 
   dialog {
+    --close-size: 2.75rem;
+    --close-inset: 0.375rem;
+    --close-space: calc(var(--close-size) / 2 + var(--close-inset));
+    --max-image-height: calc(100dvh - 1rem - 2 * var(--close-space));
+    inline-size: min(62rem, calc(100% - 1rem), calc(var(--max-image-height) * 4 / 3 + 2 * var(--close-space)));
+    max-inline-size: none;
+    max-block-size: calc(100dvh - 1rem);
+    padding: var(--close-space);
+    border: 0;
+    overflow: hidden;
     color: var(--text);
-    background: var(--panel);
-    border: 1px solid var(--rule);
-    padding: clamp(0.75rem, 2vw, 1.25rem);
-    width: min(62rem, calc(100% - 1.5rem));
-    max-block-size: calc(100svh - 2rem);
+    background: transparent;
   }
 
   dialog:modal { overscroll-behavior: contain; }
   dialog::backdrop { background: #000d; overflow: hidden; overscroll-behavior: contain; }
 
-  .preview-header {
+  .preview-panel { position: relative; overflow: hidden; border-radius: 1rem; background: var(--panel); }
+  .preview-panel img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+
+  .preview-caption {
+    position: absolute;
+    inset: auto 0 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 0.65rem 1rem;
-    margin-block-end: 0.75rem;
+    gap: 0.55rem;
+    padding: clamp(0.7rem, 2.25vw, 1.45rem);
+    padding-block-start: clamp(1.25rem, 4vw, 3rem);
+    background: linear-gradient(transparent, #090706cf 48%, #090706f5);
   }
 
-  .preview-header h2 { font-size: clamp(1.15rem, 0.9rem + 1vw, 1.65rem); }
-
-  dialog img {
-    width: 100%;
-    height: auto;
-    max-block-size: 73svh;
-    object-fit: contain;
-    background: #080809;
-  }
+  .preview-caption h2 { font-size: clamp(1.15rem, 0.9rem + 1vw, 1.65rem); }
+  .preview-caption .button { gap: 0.55rem; padding-inline: clamp(0.7rem, 2vw, 1.2rem); }
 
   @media (max-width: 55rem) {
     .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }

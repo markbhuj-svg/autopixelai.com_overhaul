@@ -1,4 +1,5 @@
 ---
+import DialogCornerClose from './DialogCornerClose.astro';
 import SiteLogo from './SiteLogo.astro';
 import { campaignUrl } from '../site';
 ---
@@ -13,9 +14,7 @@ import { campaignUrl } from '../site';
       <a class="button offer-claim" href={`${campaignUrl}#offer-form`}>Claim the offer <span class="arrow" aria-hidden="true"></span></a>
     </div>
   </div>
-  <form class="offer-dismiss" method="dialog">
-    <button type="submit" aria-label="Close Black Friday offer" autofocus><span aria-hidden="true"></span></button>
-  </form>
+  <DialogCornerClose label="Close Black Friday offer" />
 </dialog>
 
 <script>
@@ -104,42 +103,6 @@ import { campaignUrl } from '../site';
     block-size: auto;
     object-fit: contain;
   }
-
-  .offer-dismiss { position: absolute; inset-block-start: var(--close-inset); inset-inline-end: var(--close-inset); }
-  .offer-dismiss button {
-    display: grid;
-    place-items: center;
-    inline-size: var(--close-size);
-    block-size: var(--close-size);
-    padding: 0;
-    border: 0;
-    color: var(--text);
-    background: transparent;
-  }
-
-  .offer-dismiss button span {
-    position: relative;
-    inline-size: 50%;
-    block-size: 50%;
-    border: 1px solid #e8c0a777;
-    border-radius: 50%;
-    background: #17110ff5;
-  }
-
-  .offer-dismiss button span::before, .offer-dismiss button span::after {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    inline-size: 0.6rem;
-    block-size: 1px;
-    background: currentColor;
-    transform: translate(-50%, -50%) rotate(45deg);
-  }
-
-  .offer-dismiss button span::after { transform: translate(-50%, -50%) rotate(-45deg); }
-  .offer-dismiss button:hover span { border-color: var(--accent); color: var(--accent); }
-  .offer-dismiss button:focus-visible { outline: none; }
-  .offer-dismiss button:focus-visible span { outline: 2px solid var(--accent); outline-offset: 3px; }
 
   @media (max-width: 55rem) {
     dialog { inline-size: min(34rem, calc(100% - 1rem)); }
