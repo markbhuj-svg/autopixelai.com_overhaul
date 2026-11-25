@@ -6,7 +6,7 @@ const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
 const Heading = listing ? 'h2' : 'h3';
 const specs = [['Engine', vehicle.engine], ['Fuel', vehicle.fuel], ['Transmission', vehicle.trans.replace('Continuously Variable Transmission (CVT)', 'CVT')]].filter(([, value]) => value);
 ---
-<a class="vehicle-link" href={`/inventory/${vehicle.id}/`} aria-label={`View ${title} ${vehicle.trim}`}
+<a class="vehicle-link" href={`/vlp/${vehicle.id}/`} aria-label={`View ${title} ${vehicle.trim}`}
   data-vehicle={listing ? '' : undefined} data-make={vehicle.make} data-body={vehicle.body} data-year={vehicle.year}
   data-search={[title, vehicle.trim, vehicle.body, vehicle.drive, vehicle.fuel, vehicle.engine, vehicle.trans].join(' ').toLowerCase()}>
   <article class="vehicle-card">

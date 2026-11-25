@@ -13,7 +13,8 @@ test('restored galleries and inventory retain their complete source sets', async
   const vehicles = JSON.parse(await read('src/data/inventory.json'));
   const showrooms = await read('dist/SeeAll/index.html');
   const comparison = await read('dist/ViewAll/index.html');
-  const inventory = await read('dist/inventory/index.html');
+  const inventory = await read('dist/vlp/index.html');
+  assert.ok(inventory.includes('rel="canonical" href="https://autopixelai.com/vlp"'));
   assert.equal(catalog.slides.length, 388);
   assert.equal(pairs.length, 36);
   assert.equal(vehicles.length, 10);
@@ -33,15 +34,17 @@ test('restored galleries and inventory retain their complete source sets', async
     }
   }
   for (const vehicle of vehicles) {
-    const path = `/inventory/${vehicle.id}/`;
+    const path = `/vlp/${vehicle.id}/`;
     assert.ok(inventory.includes(`href="${path}"`));
     const detail = await read(`dist${path}index.html`);
+    assert.ok(detail.includes(`rel="canonical" href="https://autopixelai.com${path}"`));
+    assert.ok(detail.includes('href="/vlp">All inventory'));
     assert.ok(detail.includes(`${vehicle.year} ${vehicle.make} ${vehicle.model}`));
     for (const photo of vehicle.photos) assert.ok(detail.includes(`href="${photo}"`));
     assert.match(detail, /<meta name="robots" content="noindex, nofollow, noimageindex"/);
   }
   const sitemap = await read('dist/sitemap.xml');
-  assert.doesNotMatch(sitemap, /seeall|viewall|inventory/i);
+  assert.doesNotMatch(sitemap, /seeall|viewall|inventory|vlp/i);
   for (const html of [showrooms, comparison, inventory]) {
     assert.match(html, /<meta name="robots" content="noindex, nofollow, noimageindex"/);
   }
@@ -63,7 +66,7 @@ test('production routes, aliases and image responses keep noindex', async (t) =>
       if (port) { clearTimeout(timeout); resolve(`http://127.0.0.1:${port}`); }
     });
   });
-  for (const path of ['/SeeAll', '/ViewAll', '/inventory/', '/inventory/vehicle-01/']) {
+  for (const path of ['/SeeAll', '/ViewAll', '/vlp', '/vlp/vehicle-01/']) {
     const response = await fetch(base + path);
     assert.equal(response.status, 200, path);
     assert.equal(response.headers.get('x-robots-tag'), robots);
@@ -71,6 +74,9 @@ test('production routes, aliases and image responses keep noindex', async (t) =>
   for (const [alias, canonical] of [
     ['/seeall', '/SeeAll'], ['/SeeAll/', '/SeeAll'], ['/SeeAll.html', '/SeeAll'],
     ['/viewall', '/ViewAll'], ['/ViewAll/', '/ViewAll'], ['/ViewAll.html', '/ViewAll'],
+    ['/VLP', '/vlp'], ['/vLp/', '/vlp'], ['/vlp/', '/vlp'],
+    ['/inventory', '/vlp'], ['/inventory/', '/vlp'],
+    ['/VLP/Vehicle-01', '/vlp/vehicle-01/'], ['/inventory/vehicle-01/', '/vlp/vehicle-01/'],
   ]) {
     const response = await fetch(base + alias + '?ref=client', { redirect: 'manual' });
     assert.equal(response.status, 301);
@@ -80,7 +86,7 @@ test('production routes, aliases and image responses keep noindex', async (t) =>
   const photo = await fetch(base + '/assets/client-showrooms/theme-001.webp');
   assert.equal(photo.status, 200);
   assert.equal(photo.headers.get('x-robots-tag'), robots);
-  for (const path of ['/SeeAll', '/ViewAll', '/inventory/vehicle-02/',
+  for (const path of ['/SeeAll', '/ViewAll', '/VLP', '/vlp/vehicle-02/',
     '/assets/client-showrooms/theme-001.webp', '/assets/client-comparison/before-1.webp']) {
     const head = await fetch(base + path, { method: 'HEAD' });
     assert.equal(head.status, 200);
@@ -93,6 +99,6 @@ test('production routes, aliases and image responses keep noindex', async (t) =>
   });
   assert.equal(cached.statusCode, 304);
   assert.equal(cached.headers['x-robots-tag'], robots);
-  assert.equal((await fetch(base + '/inventory/vehicle-99/')).status, 404);
+  assert.equal((await fetch(base + '/vlp/vehicle-99/')).status, 404);
   assert.equal((await fetch(base + '/')).headers.get('x-robots-tag'), null);
 });

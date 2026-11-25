@@ -6,7 +6,7 @@ import '../../styles/inventory.css';
 const makes = [...new Set(vehicles.map((vehicle) => vehicle.make))].sort();
 const bodies = [...new Set(vehicles.map((vehicle) => vehicle.body).filter(Boolean))].sort();
 ---
-<SiteLayout title="Browse Vehicles" description="Explore sample vehicle profiles and full AutoPixelAI photo sets." path="/inventory/" noindex>
+<SiteLayout title="Browse Vehicles" description="Explore sample vehicle profiles and full AutoPixelAI photo sets." path="/vlp" noindex>
   <section class="wrap inventory" aria-labelledby="inventory-title">
     <div class="inventory-layout">
       <details class="filters" hidden data-filters>
