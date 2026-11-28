@@ -19,7 +19,7 @@ app.use((req, res, next) => {
   try { path = decodeURIComponent(req.path).replace(/\/+/g, '/').toLowerCase(); }
   catch { return res.sendStatus(400); }
   if (/^\/(?:seeall|viewall)(?:\.html)?(?:\/|$)/.test(path) ||
-      /^\/inventory(?:\/|$)/.test(path) ||
+      /^\/(?:inventory|vlp)(?:\/|$)/.test(path) ||
       /^\/assets\/client-(?:showrooms|comparison)\//.test(path)) {
     res.set('X-Robots-Tag', 'noindex, nofollow, noimageindex');
   }
@@ -28,6 +28,12 @@ app.use((req, res, next) => {
     const canonical = gallery[1] === 'seeall' ? '/SeeAll' : '/ViewAll';
     if (req.path !== canonical) return res.redirect(301, canonical + req.url.slice(req.path.length));
     return res.sendFile(canonical.slice(1) + '/index.html', { root: dist });
+  }
+  const inventory = /^\/(?:inventory|vlp)(?:\/([a-z0-9-]+))?\/?$/.exec(path);
+  if (inventory && ['GET', 'HEAD'].includes(req.method)) {
+    const canonical = inventory[1] ? `/vlp/${inventory[1]}/` : '/vlp';
+    if (req.path !== canonical) return res.redirect(301, canonical + req.url.slice(req.path.length));
+    if (!inventory[1]) return res.sendFile('vlp/index.html', { root: dist });
   }
   next();
 });

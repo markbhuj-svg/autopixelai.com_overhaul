@@ -1,24 +1,14 @@
 ---
+import DialogCornerClose from '../components/DialogCornerClose.astro';
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { bookingUrl } from '../site';
+import catalog from '../data/client-showrooms.json';
 import '../styles/product.css';
 
 const customUrl = bookingUrl + '?request=custom-background';
-const categories = ['Clean studios', 'Architectural', 'Industrial', 'Outdoor', 'Dealerships'];
-const themes = [
-  ['daylight-gallery', 'Daylight gallery', 'Architectural'],
-  ['graphite-sweep', 'Graphite sweep', 'Clean studios'],
-  ['alpine-overlook', 'Alpine overlook', 'Outdoor'],
-  ['copper-atelier', 'Copper atelier', 'Architectural'],
-  ['raw-concrete', 'Raw concrete', 'Industrial'],
-  ['city-dealership', 'City dealership', 'Dealerships'],
-  ['infinity-white', 'Infinity white', 'Clean studios'],
-  ['timber-rotunda', 'Timber rotunda', 'Architectural'],
-  ['factory-skylight', 'Factory skylight', 'Industrial'],
-  ['golden-hour', 'Golden hour', 'Outdoor'],
-  ['service-centre', 'Service centre', 'Dealerships'],
-  ['softbox-studio', 'Softbox studio', 'Clean studios'],
-];
+const themes = catalog.slides.slice(0, 120);
+const heroThemes = [119, 1, 6, 14, 24, 36, 48, 59, 71, 84, 97, 120].map((number) => themes[number - 1]);
+const firstHero = heroThemes[0];
 ---
 <SiteLayout
   title="Virtual Car Showrooms"
@@ -35,25 +25,25 @@ const themes = [
           <a class="text-link" href={customUrl}>Discuss a custom background</a>
         </div>
       </div>
-      <img class="hero-sample" src="/media/showrooms/daylight-gallery.webp" width="1280" height="960" fetchpriority="high" alt="A black sedan in the Daylight gallery showroom" />
+      <div class="hero-sample" data-showroom-slides={JSON.stringify(heroThemes.map(({ image }) => image))}
+        role="img" aria-label="A black sedan shown in different virtual showroom settings">
+        <img src={firstHero.image} width={firstHero.width} height={firstHero.height} fetchpriority="high" alt="" draggable="false" />
+      </div>
     </div>
   </section>
 
   <section id="showroom-grid" class="product-section" aria-labelledby="gallery-heading">
     <div class="wrap">
       <h2 id="gallery-heading" class="gallery-heading">Find a setting.</h2>
-      <p class="visually-hidden" data-gallery-status role="status"></p>
-      <search class="gallery-filters" aria-label="Filter showroom settings" hidden>
-        <button type="button" value="" aria-pressed="true">All settings</button>
-        {categories.map((category) => <button type="button" value={category} aria-pressed="false">{category}</button>)}
-      </search>
-      <ul class="gallery">
-        {themes.map(([slug, title, category]) => (
-          <li data-category={category}>
-            <a href={`/media/showrooms/${slug}.webp`} data-title={title}>
-              <img src={`/media/${slug}.webp`} width="480" height="360" loading="lazy" alt={`Black sedan in the ${title} setting`} />
+      <p class="gallery-intro">These are just {themes.length} examples from our library of 400+ showroom themes. We can also create a custom background to match your dealership.</p>
+      <a class="button gallery-cta" href={customUrl}>Request a custom background <span class="arrow" aria-hidden="true"></span></a>
+      <ul class="gallery" role="list">
+        {themes.map(({ label, image, thumbnail, thumbnailWidth, thumbnailHeight }) => (
+          <li>
+            <a href={image} data-title={label} aria-label={`Preview ${label}`}>
+              <img src={thumbnail} width={thumbnailWidth} height={thumbnailHeight} loading="lazy" decoding="async" alt="" />
               <div class="gallery-caption">
-                <h3>{title}</h3>
+                <h3>{label}</h3>
                 <span class="arrow" aria-hidden="true"></span>
               </div>
             </a>
@@ -63,71 +53,109 @@ const themes = [
     </div>
   </section>
 
-  <section class="product-callout">
-    <div class="wrap">
-      <div><h2>A setting built around your brand.</h2><p>Share a reference, your dealership colors, and a sample vehicle photo to discuss a custom look.</p></div>
-      <a class="button" href={customUrl}>Discuss a custom background</a>
-    </div>
-  </section>
-
   <dialog id="showroom-preview" aria-labelledby="preview-title" closedby="any">
-    <div class="preview-header">
-      <h2 id="preview-title">Daylight gallery</h2>
-      <form method="dialog">
-        <button class="button button-outline" aria-label="Close showroom preview" autofocus>Close</button>
-      </form>
+    <div class="preview-panel">
+      <img src={themes[0].thumbnail} width={themes[0].width} height={themes[0].height} loading="lazy" alt="" />
+      <div class="preview-caption">
+        <h2 id="preview-title">{themes[0].label}</h2>
+        <a class="button" href={customUrl + '#demo-form'}>Book a demo <span class="arrow" aria-hidden="true"></span></a>
+      </div>
     </div>
-    <img src="/media/showrooms/daylight-gallery.webp" width="1280" height="960" loading="lazy" alt="Black sedan in the Daylight gallery setting" />
+    <DialogCornerClose label="Close showroom preview" />
   </dialog>
 </SiteLayout>
 
 <script>
-  const filters = document.querySelector<HTMLElement>('.gallery-filters');
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>('.gallery-filters button')];
-  const cards = [...document.querySelectorAll<HTMLElement>('.gallery li')];
-  const count = document.querySelector<HTMLElement>('[data-gallery-status]');
-  const values = new Set(buttons.map((button) => button.value));
+  const hero = document.querySelector<HTMLElement>('[data-showroom-slides]');
 
-  function applyFilter() {
-    const requested = new URLSearchParams(window.location.search).get('category') ?? '';
-    const category = values.has(requested) ? requested : '';
-    let visible = 0;
-    for (const card of cards) {
-      card.hidden = category !== '' && card.dataset.category !== category;
-      if (!card.hidden) visible++;
-    }
-    for (const button of buttons) button.setAttribute('aria-pressed', String(button.value === category));
-    if (count) count.textContent = `${visible} ${visible === 1 ? 'setting' : 'settings'}`;
-  }
+  if (hero && 'IntersectionObserver' in window && 'animate' in hero) {
+    const frame = hero;
+    const slides: string[] = JSON.parse(frame.dataset.showroomSlides!);
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let current = frame.querySelector('img')!;
+    let index = 1;
+    let fromRight = true;
+    let visible = false;
+    let preparing = false;
+    let timer: number | undefined;
+    let sweep: Animation | undefined;
+    const canPlay = () => visible && !document.hidden && !reducedMotion.matches;
 
-  if (filters) {
-    applyFilter();
-    filters.hidden = false;
-    for (const button of buttons) {
-      button.addEventListener('click', () => {
-        const url = new URL(window.location.href);
-        if (button.value) url.searchParams.set('category', button.value);
-        else url.searchParams.delete('category');
-        if (url.href !== window.location.href) history.pushState(null, '', url);
-        applyFilter();
-      });
+    function schedule() {
+      window.clearTimeout(timer);
+      if (!canPlay()) sweep?.finish();
+      else if (!preparing && !sweep) timer = window.setTimeout(advance, 3400);
     }
-    window.addEventListener('popstate', applyFilter);
+
+    async function advance() {
+      if (!canPlay()) return;
+      preparing = true;
+      const next = new Image();
+      next.alt = '';
+      next.draggable = false;
+      next.fetchPriority = 'low';
+      next.src = slides[index];
+      const ready = await next.decode().then(() => true, () => false);
+      preparing = false;
+      const playing = canPlay();
+      if (!ready || playing) index = (index + 1) % slides.length;
+      if (!ready || !playing) {
+        schedule();
+        return;
+      }
+
+      frame.append(next);
+      sweep = next.animate([
+        { clipPath: fromRight ? 'inset(0 0 0 100%)' : 'inset(0 100% 0 0)' },
+        { clipPath: 'inset(0)' },
+      ], { duration: 1000, easing: 'ease-in-out', fill: 'both' });
+      sweep.onfinish = () => {
+        current.remove();
+        current = next;
+        fromRight = !fromRight;
+        sweep?.cancel();
+        sweep = undefined;
+        schedule();
+      };
+    }
+
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      schedule();
+    }).observe(frame);
+    document.addEventListener('visibilitychange', schedule);
+    reducedMotion.addEventListener('change', schedule);
   }
 
   const preview = document.querySelector<HTMLDialogElement>('#showroom-preview');
   const previewTitle = preview?.querySelector('h2');
-  const previewImage = preview?.querySelector('img');
+  const previewPanel = preview?.querySelector('.preview-panel');
 
-  if (preview && typeof preview.showModal === 'function' && previewTitle && previewImage) {
+  if (preview && typeof preview.showModal === 'function' && previewTitle && previewPanel) {
     for (const link of document.querySelectorAll<HTMLAnchorElement>('.gallery a')) {
       link.addEventListener('click', (event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
+        const image = link.querySelector('img')!.cloneNode() as HTMLImageElement;
+        image.loading = 'eager';
+        previewPanel.querySelector('img')?.replaceWith(image);
         previewTitle.textContent = link.dataset.title ?? '';
-        previewImage.src = link.href;
-        previewImage.alt = link.querySelector('img')?.alt ?? '';
         preview.showModal();
+
+        const full = new Image();
+        full.src = link.href;
+        void full.decode().then(() => {
+          if (preview.open && image.isConnected) image.src = full.src;
+        }, () => { /* Keep the selected thumbnail if the full image is unavailable. */ });
+      });
+    }
+
+    if (!('closedBy' in HTMLDialogElement.prototype)) {
+      let pressedBackdrop = false;
+      preview.addEventListener('pointerdown', (event) => { pressedBackdrop = event.target === preview; });
+      preview.addEventListener('click', (event) => {
+        if (pressedBackdrop && event.target === preview) preview.close();
+        pressedBackdrop = false;
       });
     }
   }
@@ -136,28 +164,27 @@ const themes = [
 <style>
   .showroom-hero { background: linear-gradient(var(--background), #101011 42%, var(--background)); }
 
-  .hero-sample { width: 100%; height: auto; border: 1px solid var(--rule); }
-  .gallery-heading { margin-block-end: 1.35rem; }
-
-  .gallery-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
-    margin-block-end: 1.75rem;
-  }
-
-  .gallery-filters button {
-    color: var(--muted);
-    background: transparent;
+  .hero-sample {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
     border: 1px solid var(--rule);
-    border-radius: 999px;
-    min-block-size: 2.75rem;
-    padding: 0.5rem 0.95rem;
-    font-size: 0.875rem;
+    border-radius: 1rem;
+    background: var(--panel);
   }
 
-  .gallery-filters button:hover { color: var(--text); border-color: var(--text); }
-  .gallery-filters button[aria-pressed="true"] { color: var(--ink); background: var(--accent); border-color: var(--accent); }
+  .hero-sample > :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  #showroom-grid { scroll-margin-block-start: 1rem; }
+  .gallery-intro { max-inline-size: 52ch; color: var(--muted); margin-block-start: 1rem; }
+  .gallery-cta { margin-block: 1.25rem clamp(1.75rem, 4vw, 3rem); }
 
   .gallery {
     list-style: none;
@@ -171,11 +198,12 @@ const themes = [
   .gallery a {
     display: block;
     border: 1px solid var(--rule);
+    border-radius: 0.75rem;
     background: var(--panel);
   }
 
   .gallery a:hover { border-color: var(--accent); }
-  .gallery img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+  .gallery img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0.75rem; }
 
   .gallery-caption {
     padding: 0.85rem 0.95rem;
@@ -188,38 +216,62 @@ const themes = [
   .gallery-caption h3 { font-size: 1rem; font-weight: 650; }
 
   dialog {
+    --close-size: 2.75rem;
+    --close-inset: 0.375rem;
+    --close-space: calc(var(--close-size) / 2 + var(--close-inset));
+    --max-image-height: calc(100dvh - 1rem - 2 * var(--close-space));
+    inline-size: min(62rem, calc(100% - 1rem), calc(var(--max-image-height) * 4 / 3 + 2 * var(--close-space)));
+    max-inline-size: none;
+    max-block-size: calc(100dvh - 1rem);
+    padding: var(--close-space);
+    border: 0;
+    overflow: hidden;
     color: var(--text);
-    background: var(--panel);
-    border: 1px solid var(--rule);
-    padding: clamp(0.75rem, 2vw, 1.25rem);
-    width: min(62rem, calc(100% - 1.5rem));
-    max-block-size: calc(100svh - 2rem);
+    background: transparent;
   }
 
   dialog:modal { overscroll-behavior: contain; }
   dialog::backdrop { background: #000d; overflow: hidden; overscroll-behavior: contain; }
 
-  .preview-header {
+  .preview-panel { position: relative; overflow: hidden; border-radius: 1rem; background: var(--panel); }
+  .preview-panel img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+
+  .preview-caption {
+    position: absolute;
+    inset: auto 0 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 0.65rem 1rem;
-    margin-block-end: 0.75rem;
+    gap: 0.55rem;
+    padding: clamp(0.7rem, 2.25vw, 1.45rem);
+    padding-block-start: clamp(1.25rem, 4vw, 3rem);
+    background: linear-gradient(transparent, #090706cf 48%, #090706f5);
   }
 
-  .preview-header h2 { font-size: clamp(1.15rem, 0.9rem + 1vw, 1.65rem); }
-
-  dialog img {
-    width: 100%;
-    height: auto;
-    max-block-size: 73svh;
-    object-fit: contain;
-    background: #080809;
-  }
+  .preview-caption h2 { font-size: clamp(1.15rem, 0.9rem + 1vw, 1.65rem); }
+  .preview-caption .button { gap: 0.55rem; padding-inline: clamp(0.7rem, 2vw, 1.2rem); }
 
   @media (max-width: 55rem) {
     .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 36rem) and (orientation: portrait) {
+    dialog {
+      --close-top: 0px;
+      --close-inset: calc(var(--close-size) / -2);
+      inline-size: calc(100% - var(--close-size) - 0.5rem);
+      padding: calc(var(--close-size) / 2) 0 0;
+      overflow: visible;
+    }
+
+    .preview-panel img { border-radius: 1rem; }
+
+    .preview-caption {
+      position: static;
+      padding: 0.7rem 0.85rem;
+      background: var(--panel);
+    }
   }
 
   @media (max-width: 24rem) {

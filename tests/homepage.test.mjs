@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
+const photoFrameSource = /src="(\/_astro\/([\w-]+)\.[\w-]+\.webp)"/g;
+
 test('the homepage renders its visualizer, booking path, and local media', async () => {
   const home = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
 
@@ -34,9 +36,17 @@ test('the homepage renders its visualizer, booking path, and local media', async
   assert.deepEqual(logoRows[0].slice(1, 3), ['TRADER', 'AutoTrader.ca']);
 
   const workflow = home.match(/<section id="workflow"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
-  const workflowFrames = [...workflow.matchAll(/src="\/media\/photo-app\/([\w-]+)\.webp"/g)].map(([, frame]) => frame);
+  const workflowFrames = [...workflow.matchAll(photoFrameSource)].map(([, , frame]) => frame);
   assert.deepEqual(workflowFrames, ['scan-vin', 'select-theme', 'capture-front', 'delivered-photos']);
   assert.match(workflow, /href="\/photo-app\//);
+  assert.match(workflow, /Four Steps\./);
+  assert.ok(home.indexOf('id="hero-title"') < home.indexOf('id="visualizer"'));
+  assert.ok(home.indexOf('id="visualizer"') < home.indexOf('id="inventory-preview-title"'));
+  assert.ok(home.indexOf('id="inventory-preview-title"') < home.indexOf('id="workflow"'));
+  assert.ok(home.indexOf('id="workflow"') < home.indexOf('id="showrooms"'));
+  const marquee = home.match(/<section id="showrooms"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
+  assert.match(marquee, /href="\/virtual-showrooms\/#showroom-grid"/);
+  assert.equal([...marquee.matchAll(/<img\b/g)].length, 120);
 
   const fragments = [...home.matchAll(/href="#([\w-]+)"/g)];
   for (const [, fragment] of fragments) {
@@ -48,6 +58,27 @@ test('the homepage renders its visualizer, booking path, and local media', async
   for (const [, source] of sources) {
     await access(new URL(`../dist${source}`, import.meta.url));
   }
+});
+
+test('the public showroom library uses the numbered SeeAll examples', async () => {
+  const catalog = JSON.parse(await readFile(new URL('../src/data/client-showrooms.json', import.meta.url), 'utf8'));
+  const page = await readFile(new URL('../dist/virtual-showrooms/index.html', import.meta.url), 'utf8');
+  const themes = catalog.slides.slice(0, 120);
+  const encoded = page.match(/data-showroom-slides="([^"]+)"/)?.[1];
+  assert.ok(encoded);
+  const heroSlides = JSON.parse(encoded.replaceAll('&quot;', '"'));
+  assert.ok(heroSlides.length >= 10 && heroSlides.length <= 20);
+  assert.equal(new Set(heroSlides).size, heroSlides.length);
+  for (const slide of heroSlides) {
+    assert.ok(themes.some(({ image }) => image === slide));
+    await access(new URL(`../dist${slide}`, import.meta.url));
+  }
+  const grid = page.match(/<section id="showroom-grid"[^>]*>(.*?)<\/section>/s)?.[1] ?? '';
+  const labels = [...grid.matchAll(/<h3[^>]*>(Theme \d+)<\/h3>/g)].map(([, label]) => label);
+  assert.deepEqual(labels, themes.map(({ label }) => label));
+  assert.doesNotMatch(grid, /gallery-filters|data-category|Daylight gallery/);
+  assert.match(grid, /400\+ showroom themes/);
+  assert.match(grid, /href="\/book-a-demo\/\?request=custom-background"/);
 });
 
 test('the visualizer serves ten ordered processed views for all vehicle and background combinations', async () => {
@@ -197,8 +228,12 @@ test('the product routes are linked, render canonical URLs, and include their sa
       assert.doesNotMatch(page, /type="range"|<figcaption/);
       const steps = [...page.matchAll(/<li id="(scan-vin|select-theme|capture-images|delivered-results)"/g)].map(([, id]) => id);
       assert.deepEqual(steps, ['scan-vin', 'select-theme', 'capture-images', 'delivered-results']);
-      const frames = [...new Set([...page.matchAll(/src="\/media\/photo-app\/([\w-]+)\.webp"/g)].map(([, frame]) => frame))];
-      assert.deepEqual(frames.sort(), ['capture-front', 'capture-side', 'delivered-photos', 'scan-vin', 'select-theme']);
+      const frames = new Map([...page.matchAll(photoFrameSource)].map(([, source, frame]) => [frame, source]));
+      assert.deepEqual([...frames.keys()].sort(), ['capture-front', 'capture-side', 'delivered-photos', 'scan-vin', 'select-theme']);
+      for (const [frame, source] of frames) {
+        await access(new URL(`../dist${source}`, import.meta.url));
+        if (frame !== 'capture-side') assert.ok(home.includes(`src="${source}"`));
+      }
     }
     for (const [, source] of page.matchAll(/(?:src|href)="(\/media\/[^" ]+)"/g)) {
       await access(new URL(`../dist${source}`, import.meta.url));

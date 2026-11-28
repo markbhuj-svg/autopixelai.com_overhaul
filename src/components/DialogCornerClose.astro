@@ -1,0 +1,52 @@
+---
+interface Props {
+  label: string;
+}
+const { label } = Astro.props;
+---
+
+<form method="dialog">
+  <button type="submit" aria-label={label} autofocus><span aria-hidden="true"></span></button>
+</form>
+
+<style>
+  form {
+    position: absolute;
+    inset-block-start: var(--close-top, var(--close-inset));
+    inset-inline-end: var(--close-inset);
+  }
+  button {
+    display: grid;
+    place-items: center;
+    inline-size: var(--close-size);
+    block-size: var(--close-size);
+    padding: 0;
+    border: 0;
+    color: var(--text);
+    background: transparent;
+  }
+
+  span {
+    position: relative;
+    inline-size: 50%;
+    block-size: 50%;
+    border: 1px solid #e8c0a777;
+    border-radius: 50%;
+    background: #17110ff5;
+  }
+
+  span::before, span::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: 0.6rem;
+    block-size: 1px;
+    background: currentColor;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  span::after { transform: translate(-50%, -50%) rotate(-45deg); }
+  button:hover span { border-color: var(--accent); color: var(--accent); }
+  button:focus-visible { outline: none; }
+  button:focus-visible span { outline: 2px solid var(--accent); outline-offset: 3px; }
+</style>

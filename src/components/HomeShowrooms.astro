@@ -1,0 +1,62 @@
+---
+import ShowroomMarquee from './marquee/ShowroomMarquee';
+import catalog from '../data/client-showrooms.json';
+
+const showroomPhotos = [
+  'copper-atelier', 'graphite-sweep', 'daylight-gallery', 'infinity-white',
+  'timber-rotunda', 'factory-skylight', 'softbox-studio', 'city-dealership',
+  'raw-concrete', 'golden-hour', 'alpine-overlook', 'service-centre',
+];
+const catalogCount = showroomPhotos.length * 9;
+const thumbnails = Array.from({ length: catalogCount }, (_, index) =>
+  catalog.slides[Math.floor(index * catalog.slides.length / catalogCount)].thumbnail,
+);
+const images = showroomPhotos.flatMap((slug, index) => [
+  `/media/showrooms/${slug}.webp`,
+  ...thumbnails.slice(index * 9, (index + 1) * 9),
+]);
+---
+<section id="showrooms" class="marquee-hero" aria-labelledby="showrooms-title">
+  <div class="marquee-copy">
+    <h2 id="showrooms-title">Find Your Perfect<br /><em>Showroom.</em></h2>
+    <p>Give every vehicle a consistent look with studio, architectural, and outdoor backgrounds.</p>
+  </div>
+  <a class="marquee-link" href="/virtual-showrooms/#showroom-grid" aria-labelledby="marquee-cta">
+    <div class="marquee-art dark" aria-hidden="true"><ShowroomMarquee images={images} client:visible /></div>
+    <span id="marquee-cta" class="button marquee-cta">Explore Showrooms <span class="arrow" aria-hidden="true"></span></span>
+  </a>
+</section>
+
+<style>
+  .marquee-hero {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template: minmax(2.25rem, 1fr) auto auto minmax(2.25rem, 1fr) / minmax(0, 1fr);
+    min-block-size: 100svh;
+    overflow: clip;
+    background: var(--background);
+  }
+  .marquee-link {
+    grid-area: 1 / 1 / -1;
+    display: grid;
+    grid-template-rows: subgrid;
+    justify-items: center;
+  }
+  .marquee-art { position: absolute; inset: 0; z-index: 0; }
+  .marquee-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, #080808ed, #080808b8 42%, #0808084d 100%);
+  }
+  .marquee-copy { grid-area: 2 / 1; z-index: 1; padding-inline: var(--gutter); text-align: center; pointer-events: none; }
+  .marquee-copy h2 { font: 700 clamp(3rem, 7.8vw, 7rem)/0.98 var(--display); letter-spacing: -0.025em; text-wrap: balance; }
+  .marquee-copy em { color: var(--accent); font-style: normal; }
+  .marquee-copy p { max-inline-size: 42ch; margin: 1rem auto 1.75rem; font-size: clamp(1rem, 1.4vw, 1.15rem); }
+  .marquee-cta { grid-row: 3; z-index: 1; min-block-size: 3rem; }
+  .marquee-link:hover .marquee-cta { background: #ffc096; }
+  .marquee-link:focus-visible { outline-offset: -4px; }
+  .marquee-link:focus-visible .marquee-cta { outline: 2px solid var(--text); outline-offset: 4px; }
+</style>

@@ -14,9 +14,9 @@ const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
 const facts = [['Model year', vehicle.year], ['Make', vehicle.make], ['Trim', vehicle.trim], ['Body style', vehicle.body],
   ['Drivetrain', vehicle.drive], ['Fuel type', vehicle.fuel], ['Engine', vehicle.engine], ['Transmission', vehicle.trans], ['Doors', vehicle.doors]];
 ---
-<SiteLayout title={title} description={`Explore the ${title} and its complete vehicle photo set.`} path={`/inventory/${vehicle.id}/`} noindex>
+<SiteLayout title={title} description={`Explore the ${title} and its complete vehicle photo set.`} path={`/vlp/${vehicle.id}/`} noindex>
   <section class="wrap vehicle-page">
-    <nav class="breadcrumb" aria-label="Inventory navigation"><a href="/inventory/">All inventory</a></nav>
+    <nav class="breadcrumb" aria-label="Inventory navigation"><a href="/vlp">All inventory</a></nav>
     <div class="detail-grid">
       <section class="gallery" aria-label="Vehicle photos" data-gallery>
         <div class="gallery-frame">
