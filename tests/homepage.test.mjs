@@ -119,7 +119,7 @@ test('every launch route is built, linked, and included in the sitemap', async (
     '/', '/photo-app/', '/virtual-showrooms/',
     '/try-it/', '/integrations/', '/book-a-demo/', '/BlackFriday',
   ];
-  const origin = 'https://autopixelai.com';
+  const origin = 'https://www.autopixelai.com';
   const pages = new Map();
   for (const route of routes) {
     const folder = route.endsWith('/') ? route : `${route}/`;
@@ -131,10 +131,12 @@ test('every launch route is built, linked, and included in the sitemap', async (
 
   const home = pages.get('/');
   const sitemap = await readFile(new URL('../dist/sitemap.xml', import.meta.url), 'utf8');
+  const robots = await readFile(new URL('../dist/robots.txt', import.meta.url), 'utf8');
   const oldPartners = await readFile(new URL('../dist/partners/index.html', import.meta.url), 'utf8');
   assert.match(oldPartners, /http-equiv=["']refresh["']/i);
   assert.match(oldPartners, /\/integrations\/#partners/);
-  assert.ok(!sitemap.includes(`<loc>${origin}/partners/</loc>`));
+  assert.deepEqual(robots.match(/^Sitemap: .*$/gm), [`Sitemap: ${origin}/sitemap.xml`]);
+  assert.equal([...sitemap.matchAll(/<loc>/g)].length, routes.length);
   for (const route of routes) {
     assert.ok(home.includes(`href="${route}"`), `Homepage links to ${route}`);
     assert.ok(sitemap.includes(`<loc>${origin}${route}</loc>`), `Sitemap includes ${route}`);
@@ -192,8 +194,8 @@ test('both vehicle uploaders and the demo enquiry have on-page controls', async 
   assert.match(demo, /<dialog[^>]*id="lead-confirmation"[^>]*aria-labelledby="lead-confirmation-title"/);
   assert.match(demo, /Inventory demo\s*<strong[^>]*>requested\./);
   assert.match(demo, /data-lead-reference/);
-  assert.doesNotMatch(photo, /https:\/\/www\.autopixelai\.com\/try-it\//);
-  assert.doesNotMatch(demo, /https:\/\/www\.autopixelai\.com\/book-a-demo\//);
+  assert.doesNotMatch(photo.slice(photo.indexOf('<body>')), /https:\/\/www\.autopixelai\.com\/try-it\//);
+  assert.doesNotMatch(demo.slice(demo.indexOf('<body>')), /https:\/\/www\.autopixelai\.com\/book-a-demo\//);
 });
 
 test('the automatic comparison pairs each lot photo with three processed front-left views', async () => {
@@ -229,7 +231,7 @@ test('the product routes are linked, render canonical URLs, and include their sa
     const path = `/${slug}/`;
     assert.ok(home.includes(`href="${path}"`), `Homepage links to ${path}`);
     const page = await readFile(new URL(`../dist${path}index.html`, import.meta.url), 'utf8');
-    assert.ok(page.includes(`rel="canonical" href="https://autopixelai.com${path}"`));
+    assert.ok(page.includes(`rel="canonical" href="https://www.autopixelai.com${path}"`));
     assert.ok(page.includes(`href="${path}" aria-current="page"`));
     assert.match(page, evidence);
     if (slug === 'photo-app') {

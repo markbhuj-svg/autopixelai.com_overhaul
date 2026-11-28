@@ -14,7 +14,7 @@ test('restored galleries and inventory retain their complete source sets', async
   const showrooms = await read('dist/SeeAll/index.html');
   const comparison = await read('dist/ViewAll/index.html');
   const inventory = await read('dist/vlp/index.html');
-  assert.ok(inventory.includes('rel="canonical" href="https://autopixelai.com/vlp"'));
+  assert.ok(inventory.includes('rel="canonical" href="https://www.autopixelai.com/vlp"'));
   assert.equal(catalog.slides.length, 388);
   assert.equal(pairs.length, 36);
   assert.equal(vehicles.length, 10);
@@ -37,7 +37,7 @@ test('restored galleries and inventory retain their complete source sets', async
     const path = `/vlp/${vehicle.id}/`;
     assert.ok(inventory.includes(`href="${path}"`));
     const detail = await read(`dist${path}index.html`);
-    assert.ok(detail.includes(`rel="canonical" href="https://autopixelai.com${path}"`));
+    assert.ok(detail.includes(`rel="canonical" href="https://www.autopixelai.com${path}"`));
     assert.ok(detail.includes('href="/vlp">All inventory'));
     assert.ok(detail.includes(`${vehicle.year} ${vehicle.make} ${vehicle.model}`));
     for (const photo of vehicle.photos) assert.ok(detail.includes(`href="${photo}"`));

@@ -3,7 +3,7 @@ import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://autopixelai.com',
+  site: 'https://www.autopixelai.com',
   devToolbar: { enabled: false },
   integrations: [react()],
   vite: { plugins: [tailwindcss()] },

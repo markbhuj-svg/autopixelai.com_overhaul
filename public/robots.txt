@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://autopixelai.com/sitemap.xml
+Sitemap: https://www.autopixelai.com/sitemap.xml
