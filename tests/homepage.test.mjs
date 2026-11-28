@@ -19,7 +19,15 @@ test('the homepage renders its visualizer, booking path, and local media', async
     'Better Vehicle Photos. Straight To Your Website.',
   ]);
   assert.doesNotMatch(home, /Concept imagery|<button\b[^>]*>\s*Pause/i);
-  assert.match(home, /\/media\/showroom-hero\.webp/);
+  const heroVideo = home.match(/<video\b[^>]*class="hero-media"[^>]*>/)?.[0] ?? '';
+  assert.match(heroVideo, /\bmuted\b/);
+  assert.match(heroVideo, /\bloop\b/);
+  assert.match(heroVideo, /\bplaysinline\b/);
+  for (const attribute of ['data-src', 'poster']) {
+    const source = heroVideo.match(new RegExp(`${attribute}="([^"]+)"`))?.[1];
+    assert.ok(source);
+    await access(new URL(`../dist${source}`, import.meta.url));
+  }
   assert.equal([...home.matchAll(/src="\/media\/autopixelai-logo\.webp"/g)].length, 3);
   assert.match(home, /id="visualizer-title"[^>]*>Showroom Visualizer\./);
   assert.doesNotMatch(home, /Try the photo transform\./);
